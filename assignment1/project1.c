@@ -191,7 +191,36 @@ void convertDecimalToIP(char p_str[], int p_endian_type) {
     decimal_number = decimal_number/2;
     l_count++;
   }
+
   if (p_endian_type == 0) {
+    l_count = length - 1;
+    int sum = 0;
+    int pointer = 0;
+    // int index = l_count;
+    while (l_count>-1) {
+      // printf("Length--> %d\n",l_count);
+      char temp[4];
+      if (l_count%8 == 0) {
+        // pointer = l_count;
+        sum = sum + binary_string[l_count]*pow(2, pointer);
+        printf("Sum --> %d\n", sum);
+        printf("pointer --> %d\n", pointer);
+
+        sprintf(temp, "%d", sum);
+        // printf("temp --> %s\n", temp);
+        strcat(ip_string, temp);
+        if (l_count!=0) {
+          strcat(ip_string, ".");
+        }
+        pointer = 0;
+        sum = 0;
+      } else {
+        printf("pointer --> %d\n", pointer);
+        sum = sum + binary_string[l_count]*pow(2, pointer);
+        pointer++;
+      }
+      l_count--;
+    }
 
   } else {
     l_count = 0;
@@ -236,7 +265,7 @@ void convertDecimalToIP(char p_str[], int p_endian_type) {
     printf("%d", binary_string[i]);
   }
   printf("\n");
-  printf("%s\n",ip_string);
+  printf("IP--> %s\n",ip_string);
 }
 // --------------------------------------------------------------------------------
 
