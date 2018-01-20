@@ -30,6 +30,7 @@ void convertIPToDecimal(char str[], int endian_type);
 void convertDecimalToIP(char str[], int endian_type);
 long binary_to_decimal(int *p_binary_string, int p_length);
 void *decimal_to_binary(unsigned int p_number, int *p_binary_string, int p_index);
+
 // --------------------------------------------------------------------------------
 
 int main(int argc, char const *argv[]) {
@@ -38,14 +39,14 @@ int main(int argc, char const *argv[]) {
   char conversion_str[100];
   int endian_type;
   if (argc > 4) {
-    printf("ERROR\n");
+    printf("%s", error_message);
     return 0;
   }
   conversion_type = atoi(argv[1]);
   strcpy(conversion_str, argv[2]);
   endian_type = atoi(argv[3]);
   int check_return = validate_input(conversion_type, conversion_str, endian_type);
-  printf("Return from validate_input --> %d\n", check_return);
+  // printf("Return from validate_input --> %d\n", check_return);
   if (check_return != RETURN_SUCCESS) {
     printf("%s", error_message);
     return 0;
@@ -56,7 +57,7 @@ int main(int argc, char const *argv[]) {
   } else {
     convertDecimalToIP(conversion_str, endian_type);
   }
-  printf("\n");
+  //printf("\n");
   return 0;
 }
 // --------------------------------------------------------------------------------
@@ -82,7 +83,7 @@ int validate_input(int p_conversion_type, char p_str[], int p_endian_type) {
 
     char *ret = strchr(p_str, '.');
     if (ret != NULL) {
-      printf("CHECKING FOR DOT --> %s\n", ret);
+      // printf("CHECKING FOR DOT --> %s\n", ret);
       return RETURN_FAIL;
     }
 
@@ -90,7 +91,7 @@ int validate_input(int p_conversion_type, char p_str[], int p_endian_type) {
     // unsigned int decimal_number = *((unsigned int *)p_str);
     // printf("decimal_number --> %u\n", decimal_number);
     if (decimal_number > UNSIGNED_INTEGER_RANGE) {
-      printf("decimal_number --> %u\n", decimal_number);
+      //printf("decimal_number --> %u\n", decimal_number);
       return RETURN_FAIL;
     }
   } else {
@@ -105,43 +106,44 @@ void convertIPToDecimal(char p_str[], int p_endian_type) {
 
   // Pre-populate with zeros
   int length = sizeof(binary_string)/sizeof(binary_string[0]);
-  for (int i = 0; i < length; i++) {
+  int i = 0;
+  for (i = 0; i < length; i++) {
     binary_string[i] = 0;
   }
-  printf("\n");
+  //printf("\n");
 
-  printf("str         --> %s\n", p_str);
-  printf("endian type --> ");
-  p_endian_type == 1 ? printf("Big Endian --> ") : printf("Little Endian --> ");
-  printf("%d \n", p_endian_type);
-  printf("-------------------------\n");
+  //printf("str         --> %s\n", p_str);
+  //printf("endian type --> ");
+  //p_endian_type == 1 ? printf("Big Endian --> ") : printf("Little Endian --> ");
+  //printf("%d \n", p_endian_type);
+  //printf("-------------------------\n");
   // printf("\n");
   int l_count = 2;
   int index = 0;
 
   if (p_endian_type == 0) {
     char tokens[4] = "000";
-    int i = 0;
-    for (i = strlen(p_str)-1; i>=0; i--) {
+    int x = 0;
+    for (x = strlen(p_str)-1; x>=0; i--) {
       // printf("char --> %c\n", p_str[i]);
-      if (p_str[i] == '.') {
+      if (p_str[x] == '.') {
         decimal_to_binary(atoi(tokens), binary_string, index);
         l_count = 2;
         strcpy(tokens, "000");
         index = index + 8;
       } else {
-        tokens[l_count--] = p_str[i];
+        tokens[l_count--] = p_str[x];
         // printf("%s\n", tokens);
       }
 
-      if (i == 0) {
+      if (x == 0) {
         // tokens[l_count] = p_str[i]; // THINK
         decimal_to_binary(atoi(tokens), binary_string, index);
         break;
       }
 
     }
-    printf("%lu\n", binary_to_decimal(binary_string, length));
+    printf("%lu", binary_to_decimal(binary_string, length));
   } else {
     //Spliting
     char *tokens = strtok(p_str, ".");
@@ -151,13 +153,15 @@ void convertIPToDecimal(char p_str[], int p_endian_type) {
       tokens = strtok(NULL, ".");
       index = index + 8;
     }
-    printf("%lu\n", binary_to_decimal(binary_string, length));
+    printf("%lu", binary_to_decimal(binary_string, length));
 
   }
-  for (int i = 0; i < length; i++) {
-    printf("%d", binary_string[i]);
-  }
-  printf("\n-------------------------\n");
+  //int j = 0;
+  // printf("Binary--> ");
+  /*or (j = 0; j < length; j++) {
+    printf("%d", binary_string[j]);
+  }*/
+  //printf("\n-------------------------\n");
 }
 // --------------------------------------------------------------------------------
 
@@ -167,18 +171,19 @@ void convertDecimalToIP(char p_str[], int p_endian_type) {
   ip_string[0]='\0';
   // Pre-populate with zeros
   int length = sizeof(binary_string)/sizeof(binary_string[0]);
-  for (int i = 0; i < length; i++) {
-    binary_string[i] = 0;
+  int j = 0;
+  for (j = 0; j < length; j++) {
+    binary_string[j] = 0;
   }
   // printf("%d\n", length);
-  printf("\n");
+  // printf("\n");
 
-  printf("str         --> %s\n", p_str);
-  printf("endian type --> ");
-  p_endian_type == 1 ? printf("Big Endian --> ") : printf("Little Endian --> ");
-  printf("%d \n", p_endian_type);
-  printf("-------------------------\n");
-  printf("\n");
+  // printf("str         --> %s\n", p_str);
+  // printf("endian type --> ");
+  // p_endian_type == 1 ? printf("Big Endian --> ") : printf("Little Endian --> ");
+  // printf("%d \n", p_endian_type);
+  // printf("-------------------------\n");
+  // printf("\n");
 
   unsigned int decimal_number = atoi(p_str);
   int l_count = 0;
@@ -251,12 +256,13 @@ void convertDecimalToIP(char p_str[], int p_endian_type) {
     }
   }
   // printf("-------------------------\n");
-  printf("Binary--> ");
-  for (int i = 0; i < length; i++) {
-    printf("%d", binary_string[i]);
-  }
-  printf("\n");
-  printf("IP--> %s\n",ip_string);
+  //printf("Binary--> ");
+  /*int k = 0;
+  for (k = 0; k < length; k++) {
+    printf("%d", binary_string[k]);
+  }*/
+  //printf("\n");
+  printf("%s",ip_string);
 }
 // --------------------------------------------------------------------------------
 
@@ -278,9 +284,10 @@ void *decimal_to_binary(unsigned int p_number, int *p_binary_string, int p_index
 
 long binary_to_decimal(int *p_binary_string, int p_length) {
   long sum = 0;
-  for (int i = 0; i < p_length; i++) {
+  int i = 0;
+  for (i = 0; i < p_length; i++) {
     sum = sum + p_binary_string[p_length-i-1]*pow(2, i);
   }
-  printf("\n");
+  //printf("\n");
   return sum;
 }
