@@ -1,11 +1,6 @@
 /*
 Name: Akash Sheth
 
-Run command:
-
-clr && gcc project1.c && ./a.out 0 192.168.0.1 1
-clr && gcc project1.c && ./a.out 1 3232235521 1
-clr && gcc project1.c && ./a.out 1 16820416 0
 */
 #include <arpa/inet.h>
 #include <stdio.h>
@@ -20,7 +15,6 @@ clr && gcc project1.c && ./a.out 1 16820416 0
 #define RETURN_SUCCESS 0
 #define ERROR_MESSAGE "ERROR"
 #define UNSIGNED_INTEGER_RANGE 4294967295
-
 const char *error_message = ERROR_MESSAGE;
 // --------------------------------------------------------------------------------
 
@@ -49,15 +43,16 @@ int main(int argc, char const *argv[]) {
   // printf("Return from validate_input --> %d\n", check_return);
   if (check_return != RETURN_SUCCESS) {
     printf("%s", error_message);
-    return 0;
+  } else {
+    if (conversion_type == 0) {
+      convertIPToDecimal(conversion_str, endian_type);
+    } else {
+      convertDecimalToIP(conversion_str, endian_type);
+    }
   }
 
-  if (conversion_type == 0) {
-    convertIPToDecimal(conversion_str, endian_type);
-  } else {
-    convertDecimalToIP(conversion_str, endian_type);
-  }
-  //printf("\n");
+
+  // printf("\n");
   return 0;
 }
 // --------------------------------------------------------------------------------
@@ -83,17 +78,22 @@ int validate_input(int p_conversion_type, char p_str[], int p_endian_type) {
 
     char *ret = strchr(p_str, '.');
     if (ret != NULL) {
-      // printf("CHECKING FOR DOT --> %s\n", ret);
       return RETURN_FAIL;
     }
 
-    unsigned int decimal_number = atoi(p_str);
-    // unsigned int decimal_number = *((unsigned int *)p_str);
-    // printf("decimal_number --> %u\n", decimal_number);
-    if (decimal_number > UNSIGNED_INTEGER_RANGE) {
-      //printf("decimal_number --> %u\n", decimal_number);
+    char *ret1 = strchr(p_str, '-');
+    if (ret1 != NULL) {
       return RETURN_FAIL;
     }
+    unsigned long long int decimal_number= 0;
+    int i = 0;
+    for(i = 0; i < strlen(p_str); i++) {
+      decimal_number += (p_str[i]-'0')*pow(10,strlen(p_str)-i-1);
+    }
+    if (decimal_number > UNSIGNED_INTEGER_RANGE) {
+      return RETURN_FAIL;
+    }
+    
   } else {
     return RETURN_FAIL; // Input error;
   }
@@ -110,22 +110,23 @@ void convertIPToDecimal(char p_str[], int p_endian_type) {
   for (i = 0; i < length; i++) {
     binary_string[i] = 0;
   }
-  //printf("\n");
+  /*printf("\n");
 
-  //printf("str         --> %s\n", p_str);
-  //printf("endian type --> ");
-  //p_endian_type == 1 ? printf("Big Endian --> ") : printf("Little Endian --> ");
-  //printf("%d \n", p_endian_type);
-  //printf("-------------------------\n");
-  // printf("\n");
+  printf("str         --> %s\n", p_str);
+  printf("endian type --> ");
+  p_endian_type == 1 ? printf("Big Endian --> ") : printf("Little Endian --> ");
+  printf("%d \n", p_endian_type);
+  printf("-------------------------\n");
+  printf("\n");*/
   int l_count = 2;
   int index = 0;
 
   if (p_endian_type == 0) {
     char tokens[4] = "000";
     int x = 0;
-    for (x = strlen(p_str)-1; x>=0; i--) {
-      // printf("char --> %c\n", p_str[i]);
+    // printf("Length-> %lu\n", strlen(p_str) );
+    for (x = strlen(p_str)-1; x>=0; x--) {
+      // printf("char --> %c\n", p_str[x]);
       if (p_str[x] == '.') {
         decimal_to_binary(atoi(tokens), binary_string, index);
         l_count = 2;
