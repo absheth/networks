@@ -1,10 +1,6 @@
 /*
 Name: Akash Sheth
 
-References:
-[1] https://stackoverflow.com/questions/5328070/how-to-convert-string-to-ip-address-and-vice-versa
-
-
 Run command:
 
 clr && gcc project1.c && ./a.out 0 192.168.0.1 1
@@ -196,18 +192,14 @@ void convertDecimalToIP(char p_str[], int p_endian_type) {
     l_count = length - 1;
     int sum = 0;
     int pointer = 0;
-    // int index = l_count;
     while (l_count>-1) {
-      // printf("Length--> %d\n",l_count);
       char temp[4];
       if (l_count%8 == 0) {
-        // pointer = l_count;
         sum = sum + binary_string[l_count]*pow(2, pointer);
-        printf("Sum --> %d\n", sum);
-        printf("pointer --> %d\n", pointer);
+        // printf("Sum --> %d\n", sum);
+        // printf("pointer --> %d\n", pointer);
 
         sprintf(temp, "%d", sum);
-        // printf("temp --> %s\n", temp);
         strcat(ip_string, temp);
         if (l_count!=0) {
           strcat(ip_string, ".");
@@ -215,7 +207,7 @@ void convertDecimalToIP(char p_str[], int p_endian_type) {
         pointer = 0;
         sum = 0;
       } else {
-        printf("pointer --> %d\n", pointer);
+        // printf("pointer --> %d\n", pointer);
         sum = sum + binary_string[l_count]*pow(2, pointer);
         pointer++;
       }
@@ -236,11 +228,9 @@ void convertDecimalToIP(char p_str[], int p_endian_type) {
           sum = sum + binary_string[pointer]*pow(2, traverse_pointer);
           ++traverse_pointer;
         }
-        // printf("sum --> %d\n", sum);
         char temp[4];
         if (sum!=0) {
           sprintf(temp, "%d", sum);
-          // printf("temp --> %s\n", temp);
           strcat(ip_string, temp);
           if (l_count!=length) {
             strcat(ip_string, ".");
@@ -261,6 +251,7 @@ void convertDecimalToIP(char p_str[], int p_endian_type) {
     }
   }
   // printf("-------------------------\n");
+  printf("Binary--> ");
   for (int i = 0; i < length; i++) {
     printf("%d", binary_string[i]);
   }
