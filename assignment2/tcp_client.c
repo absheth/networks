@@ -82,7 +82,7 @@ int main(int argc, char const *argv[]) {
         strcpy(&request[strlen(request)], filename);
         strcpy(&request[strlen(request)], " HTTP/1.1\n");
         strcpy(&request[strlen(request)], connection_type == PERSISTENT?"Connection: Keep-Alive\n":"Connection: Close\n");
-        printf("HEHEHEHEHrequest --> %s\n", request);
+        printf("REQUEST TO BE SENT --> %s\n", request);
         //exit(1);
         if (send(socketFD, request, strlen(request), 0) == FAILURE) {
                 perror("send error");

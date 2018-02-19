@@ -343,8 +343,8 @@ ssize_t readline(int connFD, void *vptr, size_t maxlen) {
         for ( n = 1; n < maxlen; n++ ) {
 
                 if ( (rc = read(connFD, &c, 1)) == 1 ) {
-                        printf("rc--> %lu", rc);
-                        printf("req_len --> %c\n", c);
+                        // printf("rc--> %lu", rc);
+                        // printf("req_len --> %c\n", c);
                         *buffer++ = c;
                         if ( c == '\n' )
                                 break;
@@ -398,15 +398,13 @@ int parse_request(char *buffer, char *http_req, int* count, int* connection_type
 
                 return 0;
         }
-
-
         printf("http--> %s\n", http_req);
         printf("out if count--> %d\n", *count);
         char      *endptr;
         char      *temp;
         endptr = strchr(buffer, ':');
         temp = calloc( (endptr - buffer) + 1, sizeof(char) );
-        printf("temp--> %s\n", temp);
+
         strncpy(temp, buffer, (endptr - buffer));
         StrUpper(temp);
         buffer = endptr + 1;
@@ -418,6 +416,7 @@ int parse_request(char *buffer, char *http_req, int* count, int* connection_type
         //Checking for connection type.
         if ( !strcmp(temp, "CONNECTION") ) {
                 StrUpper(buffer);
+                printf("temp--> %s\n", temp);
                 if (!strcmp(buffer, "CLOSE")) {
                         *connection_type = NONPERSISTENT;
                 } else {
