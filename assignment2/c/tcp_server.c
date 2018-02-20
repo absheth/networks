@@ -28,7 +28,7 @@ int StrUpper(char * buffer);
 #define SUCCESS 0
 #define FAILURE -1
 #define BACKLOG 5
-#define MAXBUFFERSIZE 1024
+#define MAXBUFFERSIZE 999999
 #define PERSISTENT 1
 #define NONPERSISTENT 2
 char * working_directory;
@@ -113,25 +113,10 @@ int main(int argc, char const *argv[]) {
 
                 printf("Connection from --> %s\n", clientIP);
 
-
-                // pthreads
-                //if (!fork()) { // This is a child process;
-                close(listen_socket); // Child doesn't need the listener
                 serviceRequest(communicate_socket);
-                // if (send(communicate_socket, "Akash Sheth is a good boy.", sizeof "Akash Sheth is a good boy.", 0) == FAILURE) {
-                //         perror("send error");
-                // }
-                shutdown (communicate_socket, SHUT_RDWR);
-                close(communicate_socket);
+
                 printf("******HERE******\n");
                 printf("count--> %d\n", count++);
-                exit(0); // for process
-                // }
-
-                // if (count > 0) {
-                //         break;
-                // }
-
                 close(communicate_socket); // Parent does not need this.
         }
 
@@ -207,7 +192,7 @@ int serviceRequest(int connFD) {
         printf("receive_buffer --> %s\n", receive_buffer);
         printf("receive_buffer size --> %lu\n", sizeof receive_buffer);
         printf("req_len --> %d\n", req_len);
-        printf("CONNECTION TYPE %s\n", connection_type==PERSISTENT?"PERSISTENT":"NONPERSISTENT");
+        printf("CONNECTION TYPE %s\n", connection_type==PERSISTENT ? "PERSISTENT" : "NONPERSISTENT");
         // int i;
         // for (i = 0; i< req_len; i++) {
         //         printf("%d --> %c\n", i, receive_buffer[i]);

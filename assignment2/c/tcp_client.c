@@ -46,25 +46,33 @@ int main(int argc, char const *argv[]) {
         memset(&hints, 0, sizeof hints);
         hints.ai_family = AF_INET;
         hints.ai_socktype = SOCK_STREAM;
-        if ((getAddrRet = getaddrinfo(argv[1], argv[2], &hints,  &server_info))) {
+        if ((getAddrRet = getaddrinfo(argv[1], argv[2], &hints,  &server_info))!= SUCCESS) {
                 fprintf(stderr, "getaddrinfo error: %s\n", gai_strerror(getAddrRet));
                 return 1;
         }
 
         // loop through all the results and connect to the first we can
         for (pointer = server_info; pointer != NULL; pointer = pointer->ai_next) {
+
                 if ((socketFD = socket(pointer->ai_family, pointer->ai_socktype, pointer->ai_protocol)) == FAILURE ) {
                         perror("client socket error");
                         continue;
                 }
-                if (connect(socketFD,pointer->ai_addr, pointer->ai_addrlen) == FAILURE) {
+                printf("Socket --> 1 %d\n", socketFD);
+                printf("pointer->ai_addrlen --> %d \n",pointer->ai_addrlen );
+                int x;
+                if ((x = connect(socketFD,pointer->ai_addr, pointer->ai_addrlen)) == FAILURE) {
+                        printf("%d\n", x);
                         close(socketFD);
                         perror("client connect");
                         continue;
                 }
+                                        printf("%d\n", x);
+                printf("Socket --> 2 %d\n", socketFD);
+                printf("Akash%d\n", pointer == NULL);
                 break;
         }
-
+        //printf("AKASH\n");
         if (pointer == NULL) {
 
                 fprintf(stderr, "%s\n", "client: failed to connect");
@@ -97,17 +105,26 @@ int main(int argc, char const *argv[]) {
                 }
         }*/
         // send(socketFD, "GET /message.html HTTP/1.1\n", 27, 0);
-        while ( numbytes !=0) {
-                if ((numbytes = recv(socketFD, buffer, MAXBUFFERSIZE, 0)) == FAILURE ) {
+        while (1) {
+
+                memset(buffer, 0, sizeof(buffer));
+                numbytes = recv(socketFD, buffer, MAXBUFFERSIZE, 0);
+                if ( numbytes == FAILURE ) {
                         perror("receive error");
-                        exit(-1);
+                        break;
                 }
+
                 printf("Received from server --> \n %s \n", buffer);
+                if (numbytes == 0) {
+                        break;
+                }
 
         }
 
         // shutdown(socketFD, SHUT_RDWR);
+        printf("xxx\n");
         close(socketFD);
+
         return 0;
 }
 // -----------------------------------------------------------------------
