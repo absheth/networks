@@ -16,8 +16,9 @@
 #include <sstream>
 #include <fstream>
 
+void perror ( const char * str );
 void getIPAddr();
-void sigchild_handler(int s);
+// void sigchild_handler(int s);
 int service_request(int connFD);
 void *get_in_addr(struct sockaddr *sa);
 void quit(std::string p_error_message);
@@ -43,6 +44,7 @@ int main(int argc, char const *argv[]) {
         std::cout << "argc --> " << argc << '\n';
         working_directory = getenv("PWD");
         std::cout << "working_directory --> " << working_directory <<'\n';
+        getIPAddr();
         //--------------------------------------------
         // Variable
 
@@ -71,8 +73,9 @@ int main(int argc, char const *argv[]) {
                 service_request(communicate_socket);
                 shutdown (communicate_socket, SHUT_RDWR);
                 close(communicate_socket);
-                printf("******HERE******\n");
-                printf("count--> %d\n", count++);
+                std::cout << "******HERE******" << '\n';
+                std::cout << "count--> " << count++ << '\n';
+
 
 
         }
@@ -83,10 +86,10 @@ int main(int argc, char const *argv[]) {
 }
 
 // -----------------------------------------------------------------------
-void sigchild_handler(int s)
-{
-        while(waitpid(-1, NULL, WNOHANG) > 0) ;
-}
+// void sigchild_handler(int s)
+// {
+//         while(waitpid(-1, NULL, WNOHANG) > 0) ;
+// }
 // -----------------------------------------------------------------------
 // get sockaddr, IPv4 or IPv6:
 void *get_in_addr(struct sockaddr *sa)
@@ -108,7 +111,7 @@ int service_request(int connFD) {
         std::string http_req;
         int rval; //, file_desc, nRead;
         int req_len = 0;
-        char filepath[9999];
+        // char filepath[9999];
         int connection_type = 10;
         fd_set fds; // Array of bits // One bit for one file descriptor
         struct timeval timeout;
@@ -132,7 +135,7 @@ int service_request(int connFD) {
                         quit("Error while calling select()");
 
                 } else if (rval == 0) {
-                        fprintf(stderr, "TIMEOUT\n");
+                        std::cerr << "TIMEOUT" << '\n';
                         return -1;
                 } else {
 
@@ -147,14 +150,10 @@ int service_request(int connFD) {
 
                 }
         } while(connection_type == 10);
-        printf("receive_buffer --> %s\n", receive_buffer);
-        printf("receive_buffer size --> %lu\n", sizeof receive_buffer);
-        printf("req_len --> %d\n", req_len);
-        printf("CONNECTION TYPE %s\n", connection_type==PERSISTENT ? "PERSISTENT" : "NONPERSISTENT");
-        // int i;
-        // for (i = 0; i< req_len; i++) {
-        //         printf("%d --> %c\n", i, receive_buffer[i]);
-        // }
+        std::cout << "receive buffer --> " << receive_buffer << '\n';
+        std::cout << "receive buffer size --> " << sizeof receive_buffer << '\n';
+        std::cout << "req_len --> " << req_len <<  '\n';
+        std::cout << "CONNECTION TYPE --> " << (connection_type==PERSISTENT ? "PERSISTENT" : "NONPERSISTENT") <<'\n';
 
         char *break_request[3];
         char temp[255];
@@ -162,33 +161,12 @@ int service_request(int connFD) {
         std::cout << "http--> " << http_req << '\n';
         std::cout << "temp--> " << temp;
         break_request[0] = strtok(temp, " ");
-        printf("break_request[0] --> %s\n", break_request[0]);
+
+        std::cout << "break_request[0] --> " <<  break_request[0] << '\n';
         if (strcmp(break_request[0], "GET") == 0) {
                 break_request[1] = strtok(NULL, " ");
                 break_request[2] = strtok(NULL, " ");
-                // break_request[2][strlen(break_request[2])] = '\0';
                 Trim(break_request[2]);
-                //printf("1 --> %s | 2 --> %s", break_request[1], break_request[2]);
-                // std::string z(break_request[2]);
-                // std::cout << "z-->" << z <<'\n';
-                // trim(z);
-                // z.erase(std::remove(z.begin(), z.end(), '\n'), z.end());
-                // std::cout << "z--> front --> "<< z.front() <<  " back " << z.back() << '\n';
-                // std::cout << "z-length --> " << z.length() << '\n';
-                // std::string a = "HTTP/1.0";
-                // std::string b = "HTTP/1.1";
-                // std::cout << a << " " << b << '\n';
-                // std::cout << "z-->" << z;
-                // std::cout << "(z!='HTTP/1.0') --> " << (z == a) <<  " and (z!='HTTP/1.1') --> " << (z == b) <<'\n';
-                //if ((z!="HTTP/1.0") && (z!="HTTP/1.1")) {
-                // std::cout << (strcmp(break_request[2], "HTTP/1.0")) << " ||  "  << (strcmp(break_request[2], "HTTP/1.1")) << '\n';
-                // char*  ch;
-                // ch = strtok(break_request[2], "\n");
-                // std::cout << ch << " and length --> " << strlen(ch) << '\n';
-                // std::cout << break_request[2] << "akash";
-                // std::cout << strlen("HTTP/1.1\n") << '\n';
-                // std::cout << strlen(break_request[2]) << '\n';
-
                 if (strcmp(break_request[2], "HTTP/1.0") != 0 && strcmp(break_request[2], "HTTP/1.1") != 0) {
                         write(connFD, "HTTP/1.0 400 Bad Request", 25);
                 } else {
@@ -196,13 +174,11 @@ int service_request(int connFD) {
                         ss << working_directory;
                         ss << break_request[1];
                         std::cout << "Final path --> " << ss.str() << '\n';
-                        // printf("Directory --> %s\n", filepath);
-                        // printf("FULL PATH --> %s\n", filepath);
+                        // std::string path = ss.str().c_str();
                         std::ifstream file;
-                        file.open(ss.str());
+                        file.open(ss.str().c_str());
                         if (file)    //FILE FOUND
                         {
-                                // printf("file_desc --> %d\n", file_desc);
                                 send(connFD, "HTTP/1.0 200 OK\n\n", 17, 0);
 
                                         std::string tempstr;
@@ -213,24 +189,11 @@ int service_request(int connFD) {
                                                 send(connFD, tempstr.c_str(), tempstr.length(),  0);
                                                 // now we loop back and get the next line in 'str'
                                         }
-
-                                        //send(connFD, tempstr.c_str(), tempstr.length(),  0);
-
-                                // while ( (nRead=read(file_desc, send_buffer, MAXBUFFERSIZE))>0 ) {
-                                //         // printf("%s\n", send_buffer);
-                                //         //printf("%d\n", nRead);
-                                //         send (connFD, send_buffer, nRead, 0);
-                                // }
-                                // send (connFD,"done.", 5, 1);
                         }
                         else  {
-                                // printf("file_desc --> %d\n", file_desc);
-                                printf("NOT FOUND\n");
-                                write(connFD, "HTTP/1.0 404 Not Found\n", 23);            //FILE NOT FOUND
-
+                                std::cout << "NOT FOUND" << '\n';
                                 char buffer[100];
-
-                                sprintf(buffer, "<HTML>\n<HEAD>\n<TITLE>Server Error %d</TITLE>\n"
+                                sprintf(buffer, "HTTP/1.0 404 Not Found\n<HTML>\n<HEAD>\n<TITLE>Server Error %d</TITLE>\n"
                                         "</HEAD>\n\n", 404);
                                 Writeline(connFD, buffer, strlen(buffer));
 
@@ -247,19 +210,9 @@ int service_request(int connFD) {
                 }
 
         } else {
-                printf("NOT GET \n");
+                std::cout << "NOT GET" << '\n';
         }
 
-
-
-        /*Request current_request;
-           initialize_request(&current_request);
-           if (read_request(connFD, &current_request) == FAILURE) {
-                printf("FAILURE\n");
-
-           } else {
-                printf("SUCCESS\n");
-           }*/
         return 0;
 }
 // -----------------------------------------------------------------------
@@ -270,7 +223,7 @@ void getIPAddr() {
         char host[NI_MAXHOST];
 
         if (getifaddrs(&ifaddr) == -1) {
-                perror("getifaddrs");
+                std::perror("getifaddrs");
                 exit(EXIT_FAILURE);
         }
 
@@ -281,10 +234,11 @@ void getIPAddr() {
                         s = getnameinfo(ifa->ifa_addr, sizeof(struct sockaddr_in),
                                         host, NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
                         if (s != 0) {
-                                printf("getnameinfo() failed: %s\n", gai_strerror(s));
+
+                                std::cout << "getnameinfo() failed: " << gai_strerror(s) <<'\n';
                                 exit(EXIT_FAILURE);
                         }
-                        printf("<Interface>: %s \t <Address> %s\n", ifa->ifa_name, host);
+                        std::cout << "<Interface>:> " << ifa->ifa_name << "<Address>" << host << '\n';
                 }
         }
 }
@@ -318,8 +272,8 @@ ssize_t Writeline(int sockd, const void *vptr, size_t n) {
 /*  Read a line from a socket  */
 
 ssize_t readline(int connFD, void *vptr, size_t maxlen) {
-        printf("IN READLINE\n");
-        printf("MAXLEN --> %lu\n", maxlen);
+        std::cout << "IN READLINE" << '\n';
+        std::cout << "MAXLEN--> " << maxlen <<'\n';
         ssize_t n, rc;
         char c, *buffer;
 
@@ -328,21 +282,20 @@ ssize_t readline(int connFD, void *vptr, size_t maxlen) {
         for ( n = 1; n < maxlen; n++ ) {
 
                 if ( (rc = read(connFD, &c, 1)) == 1 ) {
-                        // printf("rc--> %lu", rc);
-                        // printf("req_len --> %c\n", c);
+
                         *buffer++ = c;
                         if ( c == '\n' )
                                 break;
                 }
                 else if ( rc == 0 ) {
-                        printf("rc--> %lu", rc);
+
                         if ( n == 1 )
                                 return 0;
                         else
                                 break;
                 }
                 else {
-                        printf("rc--> %lu", rc);
+
                         if ( errno == EINTR )
                                 continue;
                         quit("Error in Readline()");
@@ -366,7 +319,6 @@ int Trim(char * buffer) {
 // -----------------------------------------------------------------------
 void quit(std::string p_error_message) {
 
-        //fprintf(stderr, "p_error_message --> %s\n", p_error_message);
         std::cerr << "p_error_message --> " << p_error_message << '\n';
         exit(EXIT_FAILURE);
 }
@@ -378,10 +330,6 @@ int parse_request(std::string buffer, std::string &http_req, int* count, int* co
 
                 http_req = buffer;
                 (*count)++;
-
-                printf("in if count--> %d\n", *count);
-                // printf("http--> %s\n", http_req);
-                // printf("buffer--> %s\n", buffer);
 
                 std::cout << "IN IF --> COUNT --> " << *count << '\n';
                 std::cout << "IN IF --> HTTP --> " << http_req << '\n';
@@ -421,7 +369,7 @@ int parse_request(std::string buffer, std::string &http_req, int* count, int* co
                 std::cout << "strcmp(break_request, 'CLOSE') --> "  << strcmp(break_request, "CLOSE") << '\n';
                 std::string z(break_request);
                 std::cout << "z--> " << z <<'\n';
-                z.erase(std::remove(z.begin(), z.end(), '\n'), z.end());
+                //z.erase(std::remove(z.begin(), z.end(), '\n'), z.end());
                 std::cout << z + " == CLOSE"<< (z=="CLOSE") << '\n';
                 if (z == "CLOSE") {
                         *connection_type = NONPERSISTENT;
@@ -461,7 +409,7 @@ int start_server() {
 
         int enable = 1;
         struct addrinfo hints, *server_info, *pointer;
-        struct sigaction sa; // NO IDEA WHY USED
+        // struct sigaction sa; // NO IDEA WHY USED
         int getAddrRet;
 
         memset(&hints, 0, sizeof hints);
@@ -479,44 +427,46 @@ int start_server() {
                 std::cout << "socket type --> " << pointer->ai_socktype << '\n';
                 std::cout << "protocol --> " << pointer->ai_protocol << '\n';
                 if ((listen_socket = socket(pointer->ai_family, pointer->ai_socktype, pointer->ai_protocol)) == FAILURE) {
-                        perror("Socket Error ");
+                        std::perror("Socket Error ");
                         continue; // because we want to keep checking for other IP Addresses.
                 }
                 //-- CHECK
                 if (setsockopt(listen_socket, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) == -1) {
-                        perror("setsockopt error");
+                        std::perror("setsockopt error");
                         return FAILURE;
                 }
                 //-- CHECK
 
                 if (bind(listen_socket, pointer->ai_addr, pointer->ai_addrlen) == -1) {
                         close(listen_socket); // close the listening socket because the binding failed.
-                        perror("server bind error");
+                        std::perror("server bind error");
                         continue;
                 }
                 break;
         }
 
         if (pointer == NULL) {
-                perror("Server failed to bind");
+                std::perror("Server failed to bind");
                 return FAILURE;
         }
 
         freeaddrinfo(server_info); // USE COMPLETE
 
         if (listen(listen_socket, BACKLOG) == FAILURE) {
-                perror("listen error");
+                std::perror("listen error");
                 return FAILURE;
         }
         // NO IDEA WHY USED - START
-        sa.sa_handler = sigchild_handler; // reap all dead processes
-        sigemptyset(&sa.sa_mask);
-        sa.sa_flags = SA_RESTART;
-        if (sigaction(SIGCHLD, &sa, NULL) == -1) {
-                perror("sigaction");
-                exit(FAILURE);
-        }
+        // sa.sa_handler = sigchild_handler; // reap all dead processes
+        // sigemptyset(&sa.sa_mask);
+        // sa.sa_flags = SA_RESTART;
+        // if (sigaction(SIGCHLD, &sa, NULL) == -1) {
+        //         std::perror("sigaction");
+        //         exit(FAILURE);
+        // }
         // NO IDEA WHY USED - END
+
+        std::cout << "Address: " << pointer->ai_addr->sa_data << '\n';
 
         std::cout << "Server started. Waiting for the connection." << '\n';
         return SUCCESS;

@@ -1,7 +1,7 @@
 // Header file for input output functions
 #include <iostream>
 
-// #include <stdlib.h>
+#include <stdlib.h>
 #include <ifaddrs.h>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -13,8 +13,9 @@
 #include <sstream>
 #include <errno.h>
 #include <ctype.h>
+#include <stdio.h>
 
-
+extern void perror (const char *__s);
 void getIPAddr();
 void *get_in_addr(struct sockaddr *sa);
 // #define PORT "9158"  // the client will be connecting to
@@ -26,16 +27,11 @@ void *get_in_addr(struct sockaddr *sa);
 
 int main(int argc, char const *argv[]) {
 
-        printf("argc --> %d\n", argc);
-
+        std::cout << "argc --> " << argc <<'\n';
         int connection_type;
         int total_files;
         // -----------------------------------------------------------------------
-        // if (argc != 5) {
-        //         // fprintf(stderr, "%s\n", "usage: client server_host server_port connection_type filename.txt");
-        //         std::cerr << "usage: client server_host server_port connection_type filename.txt" << '\n';
-        //         exit(1);
-        // }
+
         std::string server_host = argv[1];
         std::string server_port = argv[2];
         connection_type = atoi(argv[3]);
@@ -81,14 +77,14 @@ int main(int argc, char const *argv[]) {
 
 
         connection_type = atoi(argv[3]);
-        const char *filename = argv[4];
-        printf("%s\n", filename);
+        // const char *filename = argv[4];
+        // std::cout << "filename --> " << filename <<'\n';
 
         memset(&hints, 0, sizeof hints);
         hints.ai_family = AF_INET;
         hints.ai_socktype = SOCK_STREAM;
         if ((getAddrRet = getaddrinfo(server_host.c_str(), server_port.c_str(), &hints,  &server_info))) {
-                fprintf(stderr, "getaddrinfo error: %s\n", gai_strerror(getAddrRet));
+                std::cerr << "getaddrinfo error:" << gai_strerror(getAddrRet) << '\n';
                 return 1;
         }
 
@@ -114,7 +110,7 @@ int main(int argc, char const *argv[]) {
 
         inet_ntop(pointer->ai_family, get_in_addr((struct sockaddr *)&pointer->ai_addr), clientIP, sizeof clientIP);
 
-        printf("Client: connecting to %s\n", clientIP);
+
         std::cout <<"Client: connecting to "<< clientIP << '\n';
         freeaddrinfo(server_info); // All done with this structure
         //char httphead[] = "GET /1mb.txt HTTP/1.1\n";
@@ -141,11 +137,11 @@ int main(int argc, char const *argv[]) {
         }
         /*if (connection_type == PERSISTENT) {
                 if (send(socketFD, "Connection: keep-alive\n", strlen("Connection: keep-alive\n"), 0) == FAILURE) {
-                        perror("send error");
+                        std::perror("send error");
                 }
         } else {
                 if (send(socketFD, "Connection: close\n", strlen("Connection: close\n"), 0) == FAILURE) {
-                        perror("send error");
+                        std::perror("send error");
                 }
         }*/
         // send(socketFD, "GET /message.html HTTP/1.1\n", 27, 0);
