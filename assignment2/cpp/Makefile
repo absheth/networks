@@ -75,7 +75,7 @@ $(MAINS:.$(EXT)=): $(OBJ) $$(@).o
 # PHONY TARGETS
 clean:
 	rm -rf $(OBJ) $(MAINS:.$(EXT)=.o)
-	-rm -rf server client
+	-rm -rf server client udp_server udp_client
 
 mrproper: clean
 	rm -rf $(MAINS:.$(EXT)=)
