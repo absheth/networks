@@ -20,7 +20,7 @@ void *get_in_addr(struct sockaddr *sa);
 // #define PORT "9158"  // the client will be connecting to
 #define SUCCESS 0
 #define FAILURE -1
-#define MAXBUFFERSIZE 999999 // 100
+#define MAXBUFFERSIZE 99999 // 100
 #define PERSISTENT 1
 #define NONPERSISTENT 2
 
@@ -38,7 +38,10 @@ int main(int argc, char const *argv[]) {
         std::string files[2];
         int i;
         for(i = 4; i < argc; i++) {
-                files[i-4] = argv[i];
+                files[i-4] = "GET /";
+                files[i-4] = files[i-4] + argv[i];
+                files[i-4] = files[i-4] + " HTTP/1.1\n";
+                files[i-4] = files[i-4] + (connection_type == PERSISTENT?"Connection: Keep-Alive\n":"Connection: Close\n");
         }
 
         // INPUT DEBUG BLOCK;
@@ -50,19 +53,6 @@ int main(int argc, char const *argv[]) {
         for(int i = 0; i < total_files; i++) {
                 std::cout << "file " << i << " --> " << files[i]<< '\n';
         }
-
-
-        std::stringstream ss;
-        ss << "GET /";
-        ss << files[0];
-        ss << " HTTP/1.1 \n";
-        ss << (connection_type == PERSISTENT?"Connection: Keep-Alive\n":"Connection: Close\n");
-        std::string temp;
-        temp = ss.str();
-        std::cout << "request --> " << temp.c_str() << " and the length is " << temp.length() <<'\n';
-        // exit(1);
-
-
 
         int socketFD;
         int numbytes = 1024; // Initialization
@@ -76,9 +66,6 @@ int main(int argc, char const *argv[]) {
 
 
         connection_type = atoi(argv[3]);
-        // const char *filename = argv[4];
-        // std::cout << "filename --> " << filename <<'\n';
-
         memset(&hints, 0, sizeof hints);
         hints.ai_family = AF_INET;
         hints.ai_socktype = SOCK_STREAM;
@@ -93,70 +80,105 @@ int main(int argc, char const *argv[]) {
                         perror("client socket error");
                         continue;
                 }
-                if (connect(socketFD,pointer->ai_addr, pointer->ai_addrlen) == FAILURE) {
-                        close(socketFD);
-                        perror("client connect");
-                        continue;
+                if (connection_type == PERSISTENT) {
+                        if (connect(socketFD,pointer->ai_addr, pointer->ai_addrlen) == FAILURE) {
+                                close(socketFD);
+                                perror("client connect");
+                                continue;
+                        }
                 }
+
                 break;
         }
 
         if (pointer == NULL) {
                 // fprintf(stderr, "%s\n", "client: failed to connect");
                 std::cerr << "client: failed to connect " << '\n';
-                return 2;
+                exit(EXIT_FAILURE);
         }
 
-        inet_ntop(pointer->ai_family, get_in_addr((struct sockaddr *)&pointer->ai_addr), clientIP, sizeof clientIP);
+        // inet_ntop(pointer->ai_family, get_in_addr((struct sockaddr *)&pointer->ai_addr), clientIP, sizeof clientIP);
 
 
-        std::cout <<"Client: connecting to "<< clientIP << '\n';
-        freeaddrinfo(server_info); // All done with this structure
+        // std::cout <<"Client: connecting to "<< clientIP << '\n';
+        // freeaddrinfo(server_info); // All done with this structure
         //char httphead[] = "GET /1mb.txt HTTP/1.1\n";
+        for (i = 0; i < total_files; i++) {
+                std::cout << "Request " << (i + 1) << " --> "<< '\n';
+                std::cout << files[i] << '\n';
+                if (connection_type == NONPERSISTENT) {
+                        if ((socketFD = socket(pointer->ai_family, pointer->ai_socktype, pointer->ai_protocol)) == FAILURE ) {
+                                perror("client socket error");
+                                return EXIT_FAILURE;
+                        }
+                        if (connect(socketFD,pointer->ai_addr, pointer->ai_addrlen) == FAILURE) {
+                                close(socketFD);
+                                perror("client connect");
+                                return EXIT_FAILURE;
+                        }
+                }
 
-        // char httphead[] = "GET /";
-        // strcpy(request, httphead);
-        // strcpy(&request[strlen(request)], filename);
-        // strcpy(&request[strlen(request)], " HTTP/1.1\n");
-        // strcpy(&request[strlen(request)], connection_type == PERSISTENT?"Connection: Keep-Alive\n":"Connection: Close\n");
-        // printf("REQUEST TO BE SENT --> %s\n", request);
+                if (send(socketFD, files[i].c_str(), files[i].length(), 0) == FAILURE) {
+                        perror("send error");
+                        close(socketFD);
+                        continue;
+                }
+                while (1) {
+                        if ((numbytes = recv(socketFD, buffer, MAXBUFFERSIZE, 0)) == FAILURE ) {
+                                perror("receive error");
+                                exit(-1);
+                        }
+                        // std::cout << "numbytes --> " << numbytes << '\n';
+                        // std::cout << "HERE --> " << buffer[strlen(buffer)-1] << '\n';
+                        // if (strcmp(&buffer[strlen(buffer)-1], "x") == 0) {
+                        //         std::string stemp = buffer;
+                        //         std::cout << stemp.substr(0,strlen(buffer)-1) << '\n';
+                        //         sleep(2);
+                        //         close(socketFD);
+                        //         break;
+                        // }
+                        // std::cout << buffer << strlen(buffer)<< '\n';
 
-        std::stringstream request;
-        request << "GET /";
-        request << files[0];
-        request << " HTTP/1.1 \n";
-        request << (connection_type == PERSISTENT?"Connection: Keep-Alive\n":"Connection: Close\n");
-        std::string temp_str;
-        temp_str = request.str();
-        std::cout << "request --> " << request.str().c_str() << '\n';
+                        if (numbytes == 0) {
+                                //std::cout << "here" << '\n';
+                                if (connection_type == NONPERSISTENT) {
+                                        close(socketFD);
+                                        // std::perror("CLOSE FAILED");
+                                }
+                                std::cout << "breaking" << '\n';
+                                break;
+                        }
+                        if (connection_type == PERSISTENT) {
+                                if (strcmp(&buffer[strlen(buffer)-2], "x!") == 0) {
+                                        std::string stemp = buffer;
+                                        std::cout << stemp.substr(0,strlen(buffer)-2) << '\n';
+                                        // sleep(2);
+                                        // close(socketFD);
+                                        break;
+                                }
+                        }
+                        std::cout << buffer << '\n';
 
-
-        if (send(socketFD, request.str().c_str(), request.str().length(), 0) == FAILURE) {
-                perror("send error");
+                        // std::cout << "HERE --> " << buffer[strlen(buffer)-1] << '\n';
+                        memset(buffer, 0, sizeof buffer);
+                        // std::cout << "STILL INSIDE THE WHILE LOOP" << '\n';
+                }
+                std::cout << "OUT OF THE WHILE LOOP" << '\n';
         }
-        /*if (connection_type == PERSISTENT) {
-                if (send(socketFD, "Connection: keep-alive\n", strlen("Connection: keep-alive\n"), 0) == FAILURE) {
-                        std::perror("send error");
-                }
-        } else {
-                if (send(socketFD, "Connection: close\n", strlen("Connection: close\n"), 0) == FAILURE) {
-                        std::perror("send error");
-                }
-        }*/
-        // send(socketFD, "GET /message.html HTTP/1.1\n", 27, 0);
-        while ( numbytes !=0) {
-                if ((numbytes = recv(socketFD, buffer, MAXBUFFERSIZE, 0)) == FAILURE ) {
-                        perror("receive error");
-                        exit(-1);
-                }
-                // printf("Received from server --> \n %s \n", buffer);
-                std::cout << buffer << '\n';
-                memset(buffer, 0, sizeof buffer);
+        std::cout << "OUT OF FOR LOOP" << '\n';
+        if (connection_type == PERSISTENT) {
+                send(socketFD,"!!!!!", 5, 0);
+                // if (send(socketFD,"end", 3, 0) == FAILURE) {
+                //         perror("send error");
 
+                // }
+                close(socketFD);
         }
+
+
 
         // shutdown(socketFD, SHUT_RDWR);
-        close(socketFD);
+
         return 0;
 }
 // -----------------------------------------------------------------------

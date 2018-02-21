@@ -18,6 +18,9 @@ int Trim(char * buffer) {
 
 int main ()
 {
+        //int a =("CLOSE" == "CLOSE");
+        std::string z = "CLOSE";
+        std::cout << z.compare("CLOSE") << '\n';
         std::string str="Akash Sheth";
         std::size_t pos = str.find("Sheth"); // position of "live" in str
         std::cout << "postion --> " << pos << '\n';
@@ -27,6 +30,14 @@ int main ()
         std::cout << (!x ? "FALSE" : "TRUE") << '\n';
         char name[] = "Akash Sheth";
         Trim(name);
+        std::cout << &name[strlen(name)-2] << '\n';
+        if ((strcmp(&name[strlen(name)-2], "th") == 0)) {
+                std::cout << "TRUE" << '\n';
+        }
+        std::cout << (strcmp(&name[strlen(name)-2], "t") == 0) << '\n';
+
+
+        std::cout << "length --> " << strlen(name) << '\n';
         std::cout << name << " is a good boy" << '\n';
         // std::string str3 = str.substr (pos); // get from "live" to the end
 

@@ -19,7 +19,7 @@
 void perror ( const char * str );
 void getIPAddr();
 // void sigchild_handler(int s);
-int service_request(int connFD);
+void service_request(int connFD);
 void *get_in_addr(struct sockaddr *sa);
 void quit(std::string p_error_message);
 int Trim(char * buffer);
@@ -59,20 +59,35 @@ int main(int argc, char const *argv[]) {
         }
         //--------------------------------------------
         int count = 0;
+        sin_size = sizeof clientAddr;
         while (1) {
-                sin_size = sizeof clientAddr;
+
+                std::cout << "Now listening.. " << '\n';
                 communicate_socket = accept(listen_socket, (struct sockaddr *)&clientAddr, &sin_size);
                 if (communicate_socket == FAILURE) {
                         perror("Accept error");
                         continue;
                 }
+                // int read;
+                // read = read(connFD, &c, 1);
+                // std::cout << "read --> " << read << " char --> " << c <<  '\n';
+                // if(read == 1) {
+                //         if ((c - '0') == 1) {
+                //                 connection_type = PERSISTENT;
+                //         } else {
+                //                 connection type = NONPERSISTENT;
+                //         }
+                // } else {
+                //         std::perror("incorrect connection type");
+                // }
+
+
 
                 inet_ntop(clientAddr.ss_family, get_in_addr((struct sockaddr *)&clientAddr), clientIP, sizeof clientIP);
                 std::cout << "Connection from --> " << clientIP <<'\n';
                 std::cout << "communicate_socket -->" << communicate_socket << '\n';
                 service_request(communicate_socket);
-                shutdown (communicate_socket, SHUT_RDWR);
-                close(communicate_socket);
+
                 std::cout << "******HERE******" << '\n';
                 std::cout << "count--> " << count++ << '\n';
 
@@ -101,10 +116,12 @@ void *get_in_addr(struct sockaddr *sa)
         return &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
 // -----------------------------------------------------------------------
-int service_request(int connFD) {
-
+void service_request(int connFD) {
+        int connection_type = 10;
+        SERVENEXT:
+        std::cout << "****** SERVING NOW ******" << '\n';
         std::cout << "connFD --> " << connFD << '\n';
-        int duration = 5;
+        // int duration = 5;
         char receive_buffer[MAXBUFFERSIZE];
         // char send_buffer[MAXBUFFERSIZE];
         // char http_req[MAXBUFFERSIZE];
@@ -112,47 +129,55 @@ int service_request(int connFD) {
         int rval; //, file_desc, nRead;
         int req_len = 0;
         // char filepath[9999];
-        int connection_type = 10;
-        fd_set fds; // Array of bits // One bit for one file descriptor
-        struct timeval timeout;
+
+        // fd_set fds; // Array of bits // One bit for one file descriptor
+        // struct timeval timeout;
 
         /* Set timeout to 10 seconds */
-        timeout.tv_sec = duration; // Seconds
-        timeout.tv_usec = 0; // Microseconds
+        // timeout.tv_sec = duration; // Seconds
+        // timeout.tv_usec = 0; // Microseconds
         /* Reset file descriptor set */
-        FD_ZERO(&fds); // Clear all the bits
-        FD_SET(connFD, &fds); // Set bit for connFD
+        // FD_ZERO(&fds); // Clear all the bits
+        // FD_SET(connFD, &fds); // Set bit for connFD
 
         /* Wait until the time out is ready */
-        rval = select(connFD+1, &fds, NULL, NULL, &timeout);
+        // rval = select(connFD+1, &fds, NULL, NULL, &timeout);
 
         int count = 0;
         do {
                 /* code */
 
-                if (rval < 0) {
-                        // Error calling select()
-                        quit("Error while calling select()");
+                // if (rval < 0) {
+                //         // Error calling select()
+                //         quit("Error while calling select()");
+                //
+                // } else if (rval == 0) {
+                //         std::cerr << "TIMEOUT" << '\n';
+                //         return -1;
+                // } else {
 
-                } else if (rval == 0) {
-                        std::cerr << "TIMEOUT" << '\n';
-                        return -1;
-                } else {
+                std::string temp_str;
+                req_len = readline(connFD, receive_buffer, MAXBUFFERSIZE - 1);
+                //Trim(receive_buffer);
 
-                        std::string temp_str;
-                        req_len = readline(connFD, receive_buffer, MAXBUFFERSIZE - 1);
-                        //Trim(receive_buffer);
-
-                        temp_str = receive_buffer;
-                        trim(temp_str);
-                        std::cout << "temp str --> " << temp_str <<'\n';
-                        parse_request(temp_str, http_req, &count, &connection_type);
-
+                temp_str = receive_buffer;
+                trim(temp_str);
+                std::cout << "temp str --> " << temp_str<< " -- "  <<temp_str.compare("!!!!!") <<'\n';
+                std::cout << "CONNECTION TYPE --> " << connection_type <<  '\n';
+                if (connection_type == PERSISTENT && temp_str.compare("!!!!!") == 0) {
+                        std::cout << "CLOSING connFD" << '\n';
+                        close(connFD);
+                        return;
                 }
+
+                parse_request(temp_str, http_req, &count, &connection_type);
+
+                // }
         } while(connection_type == 10);
         std::cout << "receive buffer --> " << receive_buffer << '\n';
         std::cout << "receive buffer size --> " << sizeof receive_buffer << '\n';
         std::cout << "req_len --> " << req_len <<  '\n';
+        std::cout << "CONNECTION TYPE --> " << connection_type << '\n';
         std::cout << "CONNECTION TYPE --> " << (connection_type==PERSISTENT ? "PERSISTENT" : "NONPERSISTENT") <<'\n';
 
         char *break_request[3];
@@ -181,14 +206,22 @@ int service_request(int connFD) {
                         {
                                 send(connFD, "HTTP/1.0 200 OK\n\n", 17, 0);
 
-                                        std::string tempstr;
-                                        while (std::getline(file, tempstr)) {
-                                                // output the line
-                                                std::cout << tempstr << std::endl;
-                                                std::cout << "sending --> " << tempstr << " length --> " << tempstr.length() << '\n';
-                                                send(connFD, tempstr.c_str(), tempstr.length(),  0);
-                                                // now we loop back and get the next line in 'str'
-                                        }
+                                std::string tempstr;
+                                while (std::getline(file, tempstr)) {
+                                        // output the line
+                                        std::cout << tempstr << std::endl;
+                                        // std::cout << "sending --> " << tempstr << " length --> " << tempstr.length() << '\n';
+                                        send(connFD, tempstr.c_str(), tempstr.length(),  0);
+                                        // now we loop back and get the next line in 'str'
+                                }
+
+                                if (connection_type == NONPERSISTENT) {
+                                        // send(connFD, "x", 1,  0);
+                                        //shutdown (connFD, SHUT_RDWR);
+                                        close(connFD);
+                                } else {
+                                        send(connFD, "x!", 2,  0);
+                                }
                         }
                         else  {
                                 std::cout << "NOT FOUND" << '\n';
@@ -205,15 +238,19 @@ int service_request(int connFD) {
                                         "</BODY>\n</HTML>\n");
                                 Writeline(connFD, buffer, strlen(buffer));
 
-                                return 0;
+                                // return 0;
                         }
                 }
 
         } else {
                 std::cout << "NOT GET" << '\n';
         }
+        if (connection_type == PERSISTENT) {
+                std::cout << "THE CONNECTION IS PERSISTENT." << '\n';
+                goto SERVENEXT;
+        }
 
-        return 0;
+        // return 0;
 }
 // -----------------------------------------------------------------------
 
@@ -331,14 +368,14 @@ int parse_request(std::string buffer, std::string &http_req, int* count, int* co
                 http_req = buffer;
                 (*count)++;
 
-                std::cout << "IN IF --> COUNT --> " << *count << '\n';
-                std::cout << "IN IF --> HTTP --> " << http_req << '\n';
-                std::cout << "IN IF --> BUFFER --> " << buffer << '\n';
+                // std::cout << "IN IF --> COUNT --> " << *count << '\n';
+                // std::cout << "IN IF --> HTTP --> " << http_req << '\n';
+                // std::cout << "IN IF --> BUFFER --> " << buffer << '\n';
                 return 0;
         }
-        std::cout << "OUT IF --> COUNT --> " << *count << '\n';
-        std::cout << "OUT IF --> HTTP --> " << http_req << '\n';
-        std::cout << "OUT IF --> BUFFER --> " << buffer << '\n';
+        // std::cout << "OUT IF --> COUNT --> " << *count << '\n';
+        // std::cout << "OUT IF --> HTTP --> " << http_req << '\n';
+        // std::cout << "OUT IF --> BUFFER --> " << buffer << '\n';
 
 
 
@@ -359,24 +396,24 @@ int parse_request(std::string buffer, std::string &http_req, int* count, int* co
         StrUpper(break_request);
         std::string y(break_request);
         trim(y);
-        std::cout << "y --> " << y <<'\n';
+        // std::cout << "y --> " << y <<'\n';
 
         //Checking for connection type.
         if ( !strcmp(y.c_str(), "CONNECTION") ) {
                 break_request = strtok(NULL, " ");
                 StrUpper(break_request);
-                std::cout << "temp--> " << break_request <<'\n';
-                std::cout << "strcmp(break_request, 'CLOSE') --> "  << strcmp(break_request, "CLOSE") << '\n';
+                // std::cout << "temp--> " << break_request <<'\n';
+                // std::cout << "strcmp(break_request, 'CLOSE') --> "  << strcmp(break_request, "CLOSE") << '\n';
                 std::string z(break_request);
-                std::cout << "z--> " << z <<'\n';
-                //z.erase(std::remove(z.begin(), z.end(), '\n'), z.end());
-                std::cout << z + " == CLOSE"<< (z=="CLOSE") << '\n';
-                if (z == "CLOSE") {
+                // std::cout << "z--> " << z <<'\n';
+                z.erase(std::remove(z.begin(), z.end(), '\n'), z.end());
+                std::cout << "z.compare(CLOSE) --> "<< (z.compare("CLOSE")) << '\n';
+                if (z.compare("CLOSE") == 0) {
                         *connection_type = NONPERSISTENT;
-                        std::cout << "connection set --> " << *connection_type << '\n';
+                        std::cout << "connection set --> NONPERSISTENT " << *connection_type << '\n';
                 } else {
                         *connection_type = PERSISTENT;
-                        std::cout << "connection set --> " << *connection_type << '\n';
+                        std::cout << "connection set --> PERSISTENT" << *connection_type << '\n';
                 }
         }
 
