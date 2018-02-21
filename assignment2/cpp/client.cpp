@@ -140,7 +140,7 @@ int main(int argc, char const *argv[]) {
                         // std::cout << buffer << strlen(buffer)<< '\n';
 
                         if (numbytes == 0) {
-                                //std::cout << "here" << '\n';
+                                std::cout << "Numbyte revceived --> " << numbytes << '\n';
                                 if (connection_type == NONPERSISTENT) {
                                         close(socketFD);
                                         // std::perror("CLOSE FAILED");
@@ -150,6 +150,8 @@ int main(int argc, char const *argv[]) {
                         }
                         if (connection_type == PERSISTENT) {
                                 if (strcmp(&buffer[strlen(buffer)-2], "x!") == 0) {
+
+                                        std::cout << "x! FROM SERVER" << '\n';
                                         std::string stemp = buffer;
                                         std::cout << stemp.substr(0,strlen(buffer)-2) << '\n';
                                         // sleep(2);
@@ -163,9 +165,10 @@ int main(int argc, char const *argv[]) {
                         memset(buffer, 0, sizeof buffer);
                         // std::cout << "STILL INSIDE THE WHILE LOOP" << '\n';
                 }
-                std::cout << "OUT OF THE WHILE LOOP" << '\n';
+                // std::cout << "OUT OF THE WHILE LOOP" << '\n';
+                memset(buffer, 0, sizeof buffer);
         }
-        std::cout << "OUT OF FOR LOOP" << '\n';
+        // std::cout << "OUT OF FOR LOOP" << '\n';
         if (connection_type == PERSISTENT) {
                 send(socketFD,"!!!!!", 5, 0);
                 // if (send(socketFD,"end", 3, 0) == FAILURE) {

@@ -209,7 +209,7 @@ void service_request(int connFD) {
                                 std::string tempstr;
                                 while (std::getline(file, tempstr)) {
                                         // output the line
-                                        std::cout << tempstr << std::endl;
+                                        // std::cout << tempstr << std::endl;
                                         // std::cout << "sending --> " << tempstr << " length --> " << tempstr.length() << '\n';
                                         send(connFD, tempstr.c_str(), tempstr.length(),  0);
                                         // now we loop back and get the next line in 'str'
@@ -222,6 +222,7 @@ void service_request(int connFD) {
                                 } else {
                                         send(connFD, "x!", 2,  0);
                                 }
+                                std::cout << "SENT SUCCESS RESPONSE" << '\n';
                         }
                         else  {
                                 std::cout << "NOT FOUND" << '\n';
@@ -315,7 +316,7 @@ ssize_t readline(int connFD, void *vptr, size_t maxlen) {
         char c, *buffer;
 
         buffer = (char*)vptr;
-
+        memset((char*)buffer, 0, sizeof buffer);
         for ( n = 1; n < maxlen; n++ ) {
 
                 if ( (rc = read(connFD, &c, 1)) == 1 ) {
