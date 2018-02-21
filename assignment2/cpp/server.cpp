@@ -15,7 +15,7 @@
 #include <ctype.h>
 #include <sstream>
 #include <fstream>
-
+#include <algorithm>
 void perror ( const char * str );
 void getIPAddr();
 // void sigchild_handler(int s);

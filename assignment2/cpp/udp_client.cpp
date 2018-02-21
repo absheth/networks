@@ -39,7 +39,7 @@ int main(int argc, char const *argv[]) {
         std::string files[2];
         int i;
         for(i = 3; i < argc; i++) {
-                files[i-4] = argv[i];
+                files[i-3] = argv[i];
         }
         // std::cout << "server_host --> " << server_host<<'\n';
         // std::cout << "server_port --> " << server_port <<'\n';

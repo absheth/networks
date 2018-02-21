@@ -213,7 +213,7 @@ void service_request(int connFD) {
                 std::cout << "NOT GET" << '\n';
         }
         std::cout << "CLOSING CLIENT SOCKET--> " << connFD << '\n';
-        sleep(5);
+        // sleep(5);
         shutdown (connFD, SHUT_RDWR);
         close(connFD);
         std::cout << "GOING BACK FROM THREAD" << '\n';
