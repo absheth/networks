@@ -109,6 +109,7 @@ void service_request(int connFD) {
         char receive_buffer[MAXBUFFERSIZE];
         int isError = 0;
         int received_bytes = 0;
+        memset(receive_buffer, 0, sizeof receive_buffer);
         received_bytes = recvfrom(connFD, receive_buffer, MAXBUFFERSIZE, 0, (struct sockaddr *) &clientaddr, (socklen_t *)&clientlen);
 
         if ( received_bytes < 0 ) {
@@ -130,7 +131,9 @@ void service_request(int connFD) {
                 break_request[1] = strtok(NULL, " ");
                 break_request[2] = strtok(NULL, " ");
                 Trim(break_request[2]);
+                std::cout << "HERE"  <<  break_request[2] << '\n';
                 if (strcmp(break_request[2], "HTTP/1.0") != 0 && strcmp(break_request[2], "HTTP/1.1") != 0) {
+                        std::cout << "AKASH" << '\n';
                         sendto(connFD, "HTTP/1.0 400 Bad Request", 24, 0, (struct sockaddr *) &clientaddr, clientlen);
                         sendto(connFD, "incorrect http request format", 30, 0, (struct sockaddr *) &clientaddr, clientlen);
 
@@ -174,6 +177,7 @@ void service_request(int connFD) {
                 }
 
         } else {
+                std::cout << "here" << '\n';
                 sendto(connFD, "HTTP/1.0 400 Bad Request", 25, 0, (struct sockaddr *) &clientaddr, clientlen);
                 sendto(connFD, "incorrect http request format", 30, 0, (struct sockaddr *) &clientaddr, clientlen);
                 sendto(connFD, "x", 0, 0, (struct sockaddr *) &clientaddr, clientlen);
