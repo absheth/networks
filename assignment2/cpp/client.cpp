@@ -1,6 +1,5 @@
 // Header file for input output functions
 #include <iostream>
-
 #include <stdlib.h>
 #include <ifaddrs.h>
 #include <sys/socket.h>

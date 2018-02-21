@@ -15,11 +15,11 @@
 #include <ctype.h>
 #include <sstream>
 #include <fstream>
-
+#include <thread>
 void perror ( const char * str );
 void getIPAddr();
 // void sigchild_handler(int s);
-int service_request(int connFD);
+void service_request(int connFD);
 void *get_in_addr(struct sockaddr *sa);
 void quit(std::string p_error_message);
 int Trim(char * buffer);
@@ -34,7 +34,7 @@ void trim(std::string& s);
 #define SUCCESS 0
 #define FAILURE -1
 #define BACKLOG 5
-#define MAXBUFFERSIZE 999999
+#define MAXBUFFERSIZE 99999
 #define PERSISTENT 1
 #define NONPERSISTENT 2
 
@@ -44,7 +44,7 @@ int main(int argc, char const *argv[]) {
         std::cout << "argc --> " << argc << '\n';
         working_directory = getenv("PWD");
         std::cout << "working_directory --> " << working_directory <<'\n';
-        getIPAddr();
+        // getIPAddr();
         //--------------------------------------------
         // Variable
 
@@ -70,9 +70,8 @@ int main(int argc, char const *argv[]) {
                 inet_ntop(clientAddr.ss_family, get_in_addr((struct sockaddr *)&clientAddr), clientIP, sizeof clientIP);
                 std::cout << "Connection from --> " << clientIP <<'\n';
                 std::cout << "communicate_socket -->" << communicate_socket << '\n';
-                service_request(communicate_socket);
-                shutdown (communicate_socket, SHUT_RDWR);
-                close(communicate_socket);
+                std::thread service_thread (service_request, communicate_socket);
+                service_thread.join();
                 std::cout << "******HERE******" << '\n';
                 std::cout << "count--> " << count++ << '\n';
 
@@ -101,8 +100,8 @@ void *get_in_addr(struct sockaddr *sa)
         return &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
 // -----------------------------------------------------------------------
-int service_request(int connFD) {
-
+void service_request(int connFD) {
+        std::cout << "IN THREAD" << '\n';
         std::cout << "connFD --> " << connFD << '\n';
         int duration = 5;
         char receive_buffer[MAXBUFFERSIZE];
@@ -135,8 +134,9 @@ int service_request(int connFD) {
                         quit("Error while calling select()");
 
                 } else if (rval == 0) {
-                        std::cerr << "TIMEOUT" << '\n';
-                        return -1;
+                        // std::cerr << "TIMEOUT" << '\n';
+                        std::perror("TIMEOUT");
+                        // return -1;
                 } else {
 
                         std::string temp_str;
@@ -205,15 +205,19 @@ int service_request(int connFD) {
                                         "</BODY>\n</HTML>\n");
                                 Writeline(connFD, buffer, strlen(buffer));
 
-                                return 0;
+                                // return 0;
                         }
                 }
 
         } else {
                 std::cout << "NOT GET" << '\n';
         }
-
-        return 0;
+        std::cout << "CLOSING CLIENT SOCKET--> " << connFD << '\n';
+        sleep(5);
+        shutdown (connFD, SHUT_RDWR);
+        close(connFD);
+        std::cout << "GOING BACK FROM THREAD" << '\n';
+        //return 0;
 }
 // -----------------------------------------------------------------------
 
@@ -416,7 +420,6 @@ int start_server() {
         hints.ai_family = AF_INET;
         hints.ai_socktype = SOCK_STREAM;
         hints.ai_flags = AI_PASSIVE; // USE MY IP
-        //std::string port(PORT);
         if ((getAddrRet = getaddrinfo(NULL, PORT, &hints, &server_info)) != SUCCESS ) {
                 std::cerr << "getaddrinfo error -->" << gai_strerror(getAddrRet) <<'\n';
                 return EXIT_FAILURE;
@@ -467,7 +470,7 @@ int start_server() {
         // }
         // NO IDEA WHY USED - END
 
-        std::cout << "Address: " << pointer->ai_addr->sa_data << '\n';
+        //std::cout << "Address: " << pointer->ai_addr->sa_data << '\n';
 
         std::cout << "Server started. Waiting for the connection." << '\n';
         return SUCCESS;
