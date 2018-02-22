@@ -20,6 +20,8 @@ extern void perror (const char *__s);
 #define MAXBUFFERSIZE 99999
 
 int main(int argc, char const *argv[]) {
+        std::cout << '\n';
+        std::cout << "---------------------------- START ----------------------------" << '\n';
         int socketFD;
         int received;
         int serverlen;
@@ -72,7 +74,8 @@ int main(int argc, char const *argv[]) {
         bcopy((char *)server->h_addr,
               (char *)&serveraddr.sin_addr.s_addr, server->h_length);
         serveraddr.sin_port = htons(server_port);
-        std::cout << "Server ==> " <<  server->h_addr << '\n';
+        std::cout << "Server ==> " <<  server_host << '\n';
+        std::cout << "Port ==> " <<  server_port << '\n';
 
         serverlen = sizeof(serveraddr);
         std::stringstream request;
@@ -81,12 +84,15 @@ int main(int argc, char const *argv[]) {
         request << " HTTP/1.1\n";
         std::string temp_str;
         temp_str = request.str();
-        std::cout << "request --> " << request.str().c_str() << '\n';
+        std::cout << "REQUEST --> " << request.str().c_str() << '\n';
+        // Get starting timepoint
+        auto start = std::chrono::high_resolution_clock::now();
         if (sendto(socketFD, request.str().c_str(), request.str().length(), 0, (struct sockaddr *)&serveraddr, serverlen) < 0) {
                 perror("sending error");
                 return -1;
         }
         int size = 0;
+        std::cout << "------------ RESPONSE START ------------" << '\n';
         while(1) {
                 if ((received = recvfrom(socketFD, buffer, MAXBUFFERSIZE, 0, (struct sockaddr *)&serveraddr, (socklen_t *)&serverlen)) == FAILURE ) {
                         perror("receive error");
@@ -100,8 +106,15 @@ int main(int argc, char const *argv[]) {
                 memset(buffer, 0, sizeof buffer);
 
         }
-        std::cout << "total received" << size <<'\n';
+        std::cout << "total received bytes--> " << size <<'\n';
         close(socketFD);
+        std::cout << "------------ RESPONSE END ------------" << '\n';
+        std::cout << '\n';
+        auto finish = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> elapsed = finish - start;
+        std::cout << "Elapsed time: " << elapsed.count() << " s\n";
+        // std::cout << '\n';
+        std::cout << "---------------------------- END ----------------------------" << '\n';
         return 0;
 }
 // -----------------------------------------------------------------------

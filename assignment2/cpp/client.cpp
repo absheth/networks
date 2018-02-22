@@ -14,6 +14,7 @@
 #include <ctype.h>
 #include <stdio.h>
 
+
 extern void perror (const char *__s);
 void getIPAddr();
 void *get_in_addr(struct sockaddr *sa);
@@ -25,6 +26,9 @@ void *get_in_addr(struct sockaddr *sa);
 #define NONPERSISTENT 2
 
 int main(int argc, char const *argv[]) {
+        // std::cout << '\n';
+        std::cout << '\n';
+        std::cout << "---------------------------- START ----------------------------" << '\n';
 
         std::cout << "argc --> " << argc <<'\n';
         int connection_type;
@@ -41,17 +45,18 @@ int main(int argc, char const *argv[]) {
                 files[i-4] = "GET /";
                 files[i-4] = files[i-4] + argv[i];
                 files[i-4] = files[i-4] + " HTTP/1.1\n";
-                files[i-4] = files[i-4] + (connection_type == PERSISTENT?"Connection: Keep-Alive\n":"Connection: Close\n");
+                files[i-4] = files[i-4] + (connection_type == PERSISTENT ? "Connection: Keep-Alive\n" : "Connection: Close\n");
         }
 
         // INPUT DEBUG BLOCK;
+        std::cout << '\n';
 
         std::cout << "server_host --> " << server_host<<'\n';
         std::cout << "server_port --> " << server_port <<'\n';
-        std::cout << "connection_type --> " << connection_type << (connection_type == PERSISTENT?"Connection: Keep-Alive\n":"Connection: Close\n" )<< '\n';
+        std::cout << (connection_type == PERSISTENT ? "Connection: Keep-Alive" : "Connection: Close" )<< '\n';
         std::cout << "total_files --> " << total_files <<'\n';
         for(int i = 0; i < total_files; i++) {
-                std::cout << "file " << i << " --> " << files[i]<< '\n';
+                std::cout << "Request " << i << " --> " << files[i]<< '\n';
         }
 
         int socketFD;
@@ -92,19 +97,16 @@ int main(int argc, char const *argv[]) {
         }
 
         if (pointer == NULL) {
-                // fprintf(stderr, "%s\n", "client: failed to connect");
                 std::cerr << "client: failed to connect " << '\n';
                 exit(EXIT_FAILURE);
         }
 
-        // inet_ntop(pointer->ai_family, get_in_addr((struct sockaddr *)&pointer->ai_addr), clientIP, sizeof clientIP);
 
-
-        // std::cout <<"Client: connecting to "<< clientIP << '\n';
-        // freeaddrinfo(server_info); // All done with this structure
-        //char httphead[] = "GET /1mb.txt HTTP/1.1\n";
         for (i = 0; i < total_files; i++) {
-                std::cout << "Request " << (i + 1) << " --> "<< '\n';
+                auto start = std::chrono::high_resolution_clock::now();
+                std::cout << '\n';
+
+                std::cout << "------------ Request " << (i + 1) << " ------------ "<< '\n';
                 std::cout << files[i] << '\n';
                 if (connection_type == NONPERSISTENT) {
                         if ((socketFD = socket(pointer->ai_family, pointer->ai_socktype, pointer->ai_protocol)) == FAILURE ) {
@@ -123,50 +125,39 @@ int main(int argc, char const *argv[]) {
                         close(socketFD);
                         continue;
                 }
+                std::cout << "------------ RESPONSE START ------------" << '\n';
                 while (1) {
                         if ((numbytes = recv(socketFD, buffer, MAXBUFFERSIZE, 0)) == FAILURE ) {
                                 perror("receive error");
                                 exit(-1);
                         }
-                        // std::cout << "numbytes --> " << numbytes << '\n';
-                        // std::cout << "HERE --> " << buffer[strlen(buffer)-1] << '\n';
-                        // if (strcmp(&buffer[strlen(buffer)-1], "x") == 0) {
-                        //         std::string stemp = buffer;
-                        //         std::cout << stemp.substr(0,strlen(buffer)-1) << '\n';
-                        //         sleep(2);
-                        //         close(socketFD);
-                        //         break;
-                        // }
-                        // std::cout << buffer << strlen(buffer)<< '\n';
-
                         if (numbytes == 0) {
-                                std::cout << "Numbyte revceived --> " << numbytes << '\n';
+
                                 if (connection_type == NONPERSISTENT) {
                                         close(socketFD);
-                                        // std::perror("CLOSE FAILED");
                                 }
-                                std::cout << "breaking" << '\n';
                                 break;
                         }
                         if (connection_type == PERSISTENT) {
                                 if (strcmp(&buffer[strlen(buffer)-2], "x!") == 0) {
 
-                                        std::cout << "x! FROM SERVER" << '\n';
+
                                         std::string stemp = buffer;
                                         std::cout << stemp.substr(0,strlen(buffer)-2) << '\n';
-                                        // sleep(2);
-                                        // close(socketFD);
+
                                         break;
                                 }
                         }
                         std::cout << buffer << '\n';
-
-                        // std::cout << "HERE --> " << buffer[strlen(buffer)-1] << '\n';
                         memset(buffer, 0, sizeof buffer);
-                        // std::cout << "STILL INSIDE THE WHILE LOOP" << '\n';
                 }
-                // std::cout << "OUT OF THE WHILE LOOP" << '\n';
+
                 memset(buffer, 0, sizeof buffer);
+                auto finish = std::chrono::high_resolution_clock::now();
+                std::chrono::duration<double> elapsed = finish - start;
+                std::cout << '\n';
+                std::cout << "Elapsed time: " << elapsed.count() << " s\n";
+                std::cout << "------------ RESPONSE END ------------" << '\n';
         }
         // std::cout << "OUT OF FOR LOOP" << '\n';
         if (connection_type == PERSISTENT) {
@@ -178,10 +169,11 @@ int main(int argc, char const *argv[]) {
                 close(socketFD);
         }
 
-
+        // Record end time
 
         // shutdown(socketFD, SHUT_RDWR);
-
+        std::cout << '\n';
+        std::cout << "---------------------------- END ----------------------------" << '\n';
         return 0;
 }
 // -----------------------------------------------------------------------

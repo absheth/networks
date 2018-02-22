@@ -19,6 +19,12 @@ int Trim(char * buffer) {
 int main ()
 {
         //int a =("CLOSE" == "CLOSE");
+        int response_sent = 1;
+        if (response_sent) {
+                std::cout << "1 is true" << '\n';
+        } else {
+                std::cout << "1 is false" << '\n';
+        }
         std::string z = "CLOSE";
         std::cout << z.compare("CLOSE") << '\n';
         std::string str="Akash Sheth";
@@ -28,7 +34,9 @@ int main ()
         int x = 0;
 
         std::cout << (!x ? "FALSE" : "TRUE") << '\n';
-        char name[] = "Akash Sheth";
+        char name[] = "Cache-Control: max-age=0";
+        char * temp = strstr(name,"max-age=0");
+        std::cout << "temp123--> "<< (temp==NULL) << '\n';
         Trim(name);
         std::cout << &name[strlen(name)-2] << '\n';
         if ((strcmp(&name[strlen(name)-2], "th") == 0)) {
