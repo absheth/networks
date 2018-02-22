@@ -13,7 +13,7 @@
 #include <errno.h>
 #include <ctype.h>
 #include <stdio.h>
-
+#include <chrono>
 
 extern void perror (const char *__s);
 void getIPAddr();
@@ -36,10 +36,12 @@ int main(int argc, char const *argv[]) {
         // -----------------------------------------------------------------------
 
         std::string server_host = argv[1];
+
         std::string server_port = argv[2];
         connection_type = atoi(argv[3]);
+        std::cout << "HERE" << '\n';
         total_files = argc - 4;
-        std::string files[2];
+        std::string files[total_files];
         int i;
         for(i = 4; i < argc; i++) {
                 files[i-4] = "GET /";
@@ -49,6 +51,7 @@ int main(int argc, char const *argv[]) {
         }
 
         // INPUT DEBUG BLOCK;
+        std::cout << "AKASH" << '\n';
         std::cout << '\n';
 
         std::cout << "server_host --> " << server_host<<'\n';
@@ -101,9 +104,9 @@ int main(int argc, char const *argv[]) {
                 exit(EXIT_FAILURE);
         }
 
-
+        auto start = std::chrono::high_resolution_clock::now();
         for (i = 0; i < total_files; i++) {
-                auto start = std::chrono::high_resolution_clock::now();
+
                 std::cout << '\n';
 
                 std::cout << "------------ Request " << (i + 1) << " ------------ "<< '\n';
@@ -151,14 +154,13 @@ int main(int argc, char const *argv[]) {
                         std::cout << buffer << '\n';
                         memset(buffer, 0, sizeof buffer);
                 }
-
                 memset(buffer, 0, sizeof buffer);
-                auto finish = std::chrono::high_resolution_clock::now();
-                std::chrono::duration<double> elapsed = finish - start;
-                std::cout << '\n';
-                std::cout << "Elapsed time: " << elapsed.count() << " s\n";
                 std::cout << "------------ RESPONSE END ------------" << '\n';
+                std::cout << '\n';
+
         }
+
+        memset(buffer, 0, sizeof buffer);
         // std::cout << "OUT OF FOR LOOP" << '\n';
         if (connection_type == PERSISTENT) {
                 send(socketFD,"!!!!!", 5, 0);
@@ -170,8 +172,11 @@ int main(int argc, char const *argv[]) {
         }
 
         // Record end time
-
+        auto finish = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> elapsed = finish - start;
+        std::cout << "Elapsed time: " << elapsed.count() << " s\n";
         // shutdown(socketFD, SHUT_RDWR);
+
         std::cout << '\n';
         std::cout << "---------------------------- END ----------------------------" << '\n';
         return 0;

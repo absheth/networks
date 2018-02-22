@@ -13,7 +13,7 @@
 #include <errno.h>
 #include <ctype.h>
 #include <stdio.h>
-
+#include <chrono>
 extern void perror (const char *__s);
 #define SUCCESS 0
 #define FAILURE -1
@@ -106,9 +106,11 @@ int main(int argc, char const *argv[]) {
                 memset(buffer, 0, sizeof buffer);
 
         }
-        std::cout << "total received bytes--> " << size <<'\n';
+
         close(socketFD);
         std::cout << "------------ RESPONSE END ------------" << '\n';
+        std::cout << '\n';
+        std::cout << "total received bytes--> " << size <<'\n';
         std::cout << '\n';
         auto finish = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> elapsed = finish - start;
