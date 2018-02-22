@@ -1,4 +1,3 @@
-// Header file for input output functions
 #include <iostream>
 // #include <stdio.h>
 #include <stdlib.h>
@@ -105,22 +104,25 @@ void service_request(int connFD) {
         char receive_buffer[MAXBUFFERSIZE];
         std::string http_req;
         int req_len = 0;
-        SERVENEXT:
+SERVENEXT:
         std::cout <<  std::endl;
         std::cout <<  std::endl;
         std::cout << "****** SERVING NOW ******" << '\n';
         // std::cout << "connFD --> " << connFD << '\n';
 
         int count = 0;
-        do {
-
-                std::string temp_str;
+        std::string temp_str;
+        temp_str = "";
+        while (temp_str!="\r\n") {
+                /* code */
                 memset(receive_buffer, 0, sizeof receive_buffer);
                 req_len = readline(connFD, receive_buffer, MAXBUFFERSIZE - 1);
                 //Trim(receive_buffer);
 
                 temp_str = receive_buffer;
                 trim(temp_str);
+                std::cout << "temp_str --> " << temp_str <<'\n';
+                std::cout << "length--> " << temp_str.length()<< '\n';
                 // std::cout << "temp str --> " << temp_str<< " -- "  <<temp_str.compare("!!!!!") <<'\n';
                 // std::cout << "CONNECTION TYPE --> " << connection_type <<  '\n';
                 if (connection_type == PERSISTENT && temp_str.compare("!!!!!") == 0) {
@@ -130,10 +132,10 @@ void service_request(int connFD) {
                 }
                 parse_request(temp_str, http_req, &count, &connection_type);
 
-        } while(connection_type == 10);
+        }
 
         std::cout << "CONNECTION TYPE --> " << (connection_type==PERSISTENT ? "PERSISTENT" : "NONPERSISTENT") <<'\n';
-
+        // exit(EXIT_SUCCESS);
         char *break_request[3];
         char temp[255];
         strcpy(temp, http_req.c_str());

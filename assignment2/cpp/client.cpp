@@ -48,6 +48,7 @@ int main(int argc, char const *argv[]) {
                 files[i-4] = files[i-4] + argv[i];
                 files[i-4] = files[i-4] + " HTTP/1.1\n";
                 files[i-4] = files[i-4] + (connection_type == PERSISTENT ? "Connection: Keep-Alive\n" : "Connection: Close\n");
+                files[i-4] = files[i-4] + "\r\n";
         }
 
         // INPUT DEBUG BLOCK;
