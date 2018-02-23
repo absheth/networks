@@ -17,7 +17,11 @@ Client execution for single and multithreaded server:
 ./client server_name 9158 connection_type filenames
 
 Example
+./client localhost 9158 1 1mb.txt 1mb.txt 1mb.txt 1mb.txt
 ./client localhost 9158 2 1mb.txt 1mb.txt 1mb.txt 1mb.txt
+
+
+
 
 
 ** UDP (Connection less) **
@@ -26,3 +30,6 @@ For server:
 
 For client:
 ./udp_client server_name 9158 filename
+
+Example
+./client localhost 9158 1mb.txt
