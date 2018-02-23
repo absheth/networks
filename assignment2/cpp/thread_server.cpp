@@ -1,5 +1,5 @@
 #include <iostream>
-// #include <stdio.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <ifaddrs.h>
 #include <sys/socket.h>
@@ -41,7 +41,7 @@ void trim(std::string& s);
 std::string working_directory;
 int listen_socket;
 int main(int argc, char const *argv[]) {
-        std::cout << "argc --> " << argc << '\n';
+        //std::cout << "argc --> " << argc << '\n';
         working_directory = getenv("PWD");
         //--------------------------------------------
         // Variable
@@ -51,7 +51,7 @@ int main(int argc, char const *argv[]) {
         struct sockaddr_storage clientAddr;
         //--------------------------------------------
         if (start_server() != 0) {
-                std::cout << "Server did not start." << '\n';
+                //std::cout << "Server did not start." << '\n';
                 return EXIT_FAILURE;
         }
         //--------------------------------------------
@@ -66,14 +66,15 @@ int main(int argc, char const *argv[]) {
                         continue;
                 }
                 inet_ntop(clientAddr.ss_family, get_in_addr((struct sockaddr *)&clientAddr), clientIP, sizeof clientIP);
-                std::cout << "Connection from --> " << clientIP <<'\n';
-                std::cout << "communicate_socket -->" << communicate_socket << '\n';
+                //std::cout << "Connection from --> " << clientIP <<'\n';
+                //std::cout << "communicate_socket -->" << communicate_socket << '\n';
 
                 //service_request(communicate_socket);
 
                 /* For threaded server */
+                std::cout << "Thread spawned" << std::endl;
                 std::thread service_thread(service_request, communicate_socket);
-                service_thread.join();
+                service_thread.detach();
                 // std::cout << "count--> " << count++ << '\n';
                 std::cout <<  std::endl;
                 std::cout <<  std::endl;

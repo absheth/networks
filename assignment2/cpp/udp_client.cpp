@@ -98,10 +98,18 @@ int main(int argc, char const *argv[]) {
                         perror("receive error");
                         exit(-1);
                 }
-                if (received == 0) {
-                        break;
+                std::string x(buffer); 
+                // std::cout << "received --> " << received << '\n';
+                //if (received == 0) {
+                //        break;
+                //}
+                if (x =="**over**") {
+                    break;
                 }
                 size += received;
+
+                //std::cout << "x --> " << x << '\n';
+
                 std::cout << buffer << '\n';
                 memset(buffer, 0, sizeof buffer);
 

@@ -155,6 +155,7 @@ void service_request(int connFD) {
         }
         std::cout << "total sent --> " << sum <<  '\n';
         sendto(connFD, "x", 0, 0, (struct sockaddr *) &clientaddr, clientlen);
+        sendto(connFD, "**over**", 8, 0, (struct sockaddr *) &clientaddr, clientlen);
         // return 0;
 }
 

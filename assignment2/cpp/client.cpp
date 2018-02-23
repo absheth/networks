@@ -39,7 +39,6 @@ int main(int argc, char const *argv[]) {
 
         std::string server_port = argv[2];
         connection_type = atoi(argv[3]);
-        std::cout << "HERE" << '\n';
         total_files = argc - 4;
         std::string files[total_files];
         int i;
@@ -52,15 +51,15 @@ int main(int argc, char const *argv[]) {
         }
 
         // INPUT DEBUG BLOCK;
-        std::cout << "AKASH" << '\n';
-        std::cout << '\n';
+        // std::cout << "AKASH" << '\n';
+        // std::cout << '\n';
 
-        std::cout << "server_host --> " << server_host<<'\n';
-        std::cout << "server_port --> " << server_port <<'\n';
-        std::cout << (connection_type == PERSISTENT ? "Connection: Keep-Alive" : "Connection: Close" )<< '\n';
-        std::cout << "total_files --> " << total_files <<'\n';
+        // std::cout << "server_host --> " << server_host<<'\n';
+        // std::cout << "server_port --> " << server_port <<'\n';
+        // std::cout << (connection_type == PERSISTENT ? "Connection: Keep-Alive" : "Connection: Close" )<< '\n';
+        // std::cout << "total_files --> " << total_files <<'\n';
         for(int i = 0; i < total_files; i++) {
-                std::cout << "Request " << i << " --> " << files[i]<< '\n';
+               // std::cout << "Request " << i << " --> " << files[i]<< '\n';
         }
 
         int socketFD;

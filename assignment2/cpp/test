@@ -1,0 +1,451 @@
+Server started. Waiting for the connection.
+Now listening.. 
+Thread spawned
+
+
+****** SERVING NOW ******
+ -- READING BUFFER --
+temp_str --> GET /1mb.txt HTTP/1.1
+
+length--> 22
+ -- READING BUFFER --
+temp_str --> Connection: Close
+
+length--> 18
+ -- READING BUFFER --
+temp_str --> 
+
+length--> 2
+CONNECTION TYPE --> NONPERSISTENT
+Final path --> /Users/absheth/course/2-networks/assignment2/cpp/1mb.txt
+SENT SUCCESS RESPONSE
+
+
+----------------------------Request served: THIS DIVIDES PERSISTENT AND NON-PERSISTENT----------------------------
+
+
+Now listening.. 
+Thread spawned
+
+
+****** SERVING NOW ******
+ -- READING BUFFER --
+temp_str --> GET /1mb.txt HTTP/1.1
+
+length--> 22
+ -- READING BUFFER --
+temp_str --> Connection: Close
+
+length--> 18
+ -- READING BUFFER --
+temp_str --> 
+
+length--> 2
+CONNECTION TYPE --> NONPERSISTENT
+Final path --> /Users/absheth/course/2-networks/assignment2/cpp/1mb.txt
+SENT SUCCESS RESPONSE
+
+
+----------------------------Request served: THIS DIVIDES PERSISTENT AND NON-PERSISTENT----------------------------
+
+
+Now listening.. 
+Thread spawned
+
+
+****** SERVING NOW ******
+ -- READING BUFFER --
+temp_str --> GET /1mb.txt HTTP/1.1
+
+length--> 22
+ -- READING BUFFER --
+temp_str --> Connection: Close
+
+length--> 18
+ -- READING BUFFER --
+temp_str --> 
+
+length--> 2
+CONNECTION TYPE --> NONPERSISTENT
+Final path --> /Users/absheth/course/2-networks/assignment2/cpp/1mb.txt
+SENT SUCCESS RESPONSE
+
+
+----------------------------Request served: THIS DIVIDES PERSISTENT AND NON-PERSISTENT----------------------------
+
+
+Now listening.. 
+Thread spawned
+
+
+****** SERVING NOW ******
+ -- READING BUFFER --
+temp_str --> GET /1mb.txt HTTP/1.1
+
+length--> 22
+ -- READING BUFFER --
+temp_str --> Connection: Close
+
+length--> 18
+ -- READING BUFFER --
+temp_str --> 
+
+length--> 2
+CONNECTION TYPE --> NONPERSISTENT
+Final path --> /Users/absheth/course/2-networks/assignment2/cpp/1mb.txt
+SENT SUCCESS RESPONSE
+
+
+----------------------------Request served: THIS DIVIDES PERSISTENT AND NON-PERSISTENT----------------------------
+
+
+Now listening.. 
+Thread spawned
+
+
+****** SERVING NOW ******
+ -- READING BUFFER --
+temp_str --> GET /1mb.txt HTTP/1.1
+
+length--> 22
+ -- READING BUFFER --
+temp_str --> Connection: Close
+
+length--> 18
+ -- READING BUFFER --
+temp_str --> 
+
+length--> 2
+CONNECTION TYPE --> NONPERSISTENT
+Final path --> /Users/absheth/course/2-networks/assignment2/cpp/1mb.txt
+SENT SUCCESS RESPONSE
+
+
+----------------------------Request served: THIS DIVIDES PERSISTENT AND NON-PERSISTENT----------------------------
+
+
+Now listening.. 
+Thread spawned
+
+
+****** SERVING NOW ******
+ -- READING BUFFER --
+temp_str --> GET /1mb.txt HTTP/1.1
+
+length--> 22
+ -- READING BUFFER --
+temp_str --> Connection: Close
+
+length--> 18
+ -- READING BUFFER --
+temp_str --> 
+
+length--> 2
+CONNECTION TYPE --> NONPERSISTENT
+Final path --> /Users/absheth/course/2-networks/assignment2/cpp/1mb.txt
+SENT SUCCESS RESPONSE
+
+
+----------------------------Request served: THIS DIVIDES PERSISTENT AND NON-PERSISTENT----------------------------
+
+
+Now listening.. 
+Thread spawned
+
+
+****** SERVING NOW ******
+ -- READING BUFFER --
+temp_str --> GET /1mb.txt HTTP/1.1
+
+length--> 22
+ -- READING BUFFER --
+temp_str --> Connection: Close
+
+length--> 18
+ -- READING BUFFER --
+temp_str --> 
+
+length--> 2
+CONNECTION TYPE --> NONPERSISTENT
+Final path --> /Users/absheth/course/2-networks/assignment2/cpp/1mb.txt
+SENT SUCCESS RESPONSE
+
+
+----------------------------Request served: THIS DIVIDES PERSISTENT AND NON-PERSISTENT----------------------------
+
+
+Now listening.. 
+Thread spawned
+
+
+****** SERVING NOW ******
+ -- READING BUFFER --
+temp_str --> GET /1mb.txt HTTP/1.1
+
+length--> 22
+ -- READING BUFFER --
+temp_str --> Connection: Close
+
+length--> 18
+ -- READING BUFFER --
+temp_str --> 
+
+length--> 2
+CONNECTION TYPE --> NONPERSISTENT
+Final path --> /Users/absheth/course/2-networks/assignment2/cpp/1mb.txt
+SENT SUCCESS RESPONSE
+
+
+----------------------------Request served: THIS DIVIDES PERSISTENT AND NON-PERSISTENT----------------------------
+
+
+Now listening.. 
+Thread spawned
+
+
+****** SERVING NOW ******
+ -- READING BUFFER --
+temp_str --> GET /1mb.txt HTTP/1.1
+
+length--> 22
+ -- READING BUFFER --
+temp_str --> Connection: Close
+
+length--> 18
+ -- READING BUFFER --
+temp_str --> 
+
+length--> 2
+CONNECTION TYPE --> NONPERSISTENT
+Final path --> /Users/absheth/course/2-networks/assignment2/cpp/1mb.txt
+SENT SUCCESS RESPONSE
+
+
+----------------------------Request served: THIS DIVIDES PERSISTENT AND NON-PERSISTENT----------------------------
+
+
+Now listening.. 
+Thread spawned
+
+
+****** SERVING NOW ******
+ -- READING BUFFER --
+temp_str --> GET /1mb.txt HTTP/1.1
+
+length--> 22
+ -- READING BUFFER --
+temp_str --> Connection: Close
+
+length--> 18
+ -- READING BUFFER --
+temp_str --> 
+
+length--> 2
+CONNECTION TYPE --> NONPERSISTENT
+Final path --> /Users/absheth/course/2-networks/assignment2/cpp/1mb.txt
+SENT SUCCESS RESPONSE
+
+
+----------------------------Request served: THIS DIVIDES PERSISTENT AND NON-PERSISTENT----------------------------
+
+
+Now listening.. 
+Thread spawned
+
+
+****** SERVING NOW ******
+ -- READING BUFFER --
+temp_str --> GET /1mb.txt HTTP/1.1
+
+length--> 22
+ -- READING BUFFER --
+temp_str --> Connection: Close
+
+length--> 18
+ -- READING BUFFER --
+temp_str --> 
+
+length--> 2
+CONNECTION TYPE --> NONPERSISTENT
+Final path --> /Users/absheth/course/2-networks/assignment2/cpp/1mb.txt
+SENT SUCCESS RESPONSE
+
+
+----------------------------Request served: THIS DIVIDES PERSISTENT AND NON-PERSISTENT----------------------------
+
+
+Now listening.. 
+Thread spawned
+
+
+****** SERVING NOW ******
+ -- READING BUFFER --
+temp_str --> GET /1mb.txt HTTP/1.1
+
+length--> 22
+ -- READING BUFFER --
+temp_str --> Connection: Close
+
+length--> 18
+ -- READING BUFFER --
+temp_str --> 
+
+length--> 2
+CONNECTION TYPE --> NONPERSISTENT
+Final path --> /Users/absheth/course/2-networks/assignment2/cpp/1mb.txt
+SENT SUCCESS RESPONSE
+
+
+----------------------------Request served: THIS DIVIDES PERSISTENT AND NON-PERSISTENT----------------------------
+
+
+Now listening.. 
+Thread spawned
+
+
+****** SERVING NOW ******
+ -- READING BUFFER --
+temp_str --> GET /1mb.txt HTTP/1.1
+
+length--> 22
+ -- READING BUFFER --
+temp_str --> Connection: Close
+
+length--> 18
+ -- READING BUFFER --
+temp_str --> 
+
+length--> 2
+CONNECTION TYPE --> NONPERSISTENT
+Final path --> /Users/absheth/course/2-networks/assignment2/cpp/1mb.txt
+SENT SUCCESS RESPONSE
+
+
+----------------------------Request served: THIS DIVIDES PERSISTENT AND NON-PERSISTENT----------------------------
+
+
+Now listening.. 
+Thread spawned
+
+
+****** SERVING NOW ******
+ -- READING BUFFER --
+temp_str --> GET /1mb.txt HTTP/1.1
+
+length--> 22
+ -- READING BUFFER --
+temp_str --> Connection: Close
+
+length--> 18
+ -- READING BUFFER --
+temp_str --> 
+
+length--> 2
+CONNECTION TYPE --> NONPERSISTENT
+Final path --> /Users/absheth/course/2-networks/assignment2/cpp/1mb.txt
+SENT SUCCESS RESPONSE
+
+
+----------------------------Request served: THIS DIVIDES PERSISTENT AND NON-PERSISTENT----------------------------
+
+
+Now listening.. 
+Thread spawned
+
+
+****** SERVING NOW ******
+ -- READING BUFFER --
+temp_str --> GET /1mb.txt HTTP/1.1
+
+length--> 22
+ -- READING BUFFER --
+temp_str --> Connection: Close
+
+length--> 18
+ -- READING BUFFER --
+temp_str --> 
+
+length--> 2
+CONNECTION TYPE --> NONPERSISTENT
+Final path --> /Users/absheth/course/2-networks/assignment2/cpp/1mb.txt
+SENT SUCCESS RESPONSE
+
+
+----------------------------Request served: THIS DIVIDES PERSISTENT AND NON-PERSISTENT----------------------------
+
+
+Now listening.. 
+Thread spawned
+
+
+****** SERVING NOW ******
+ -- READING BUFFER --
+temp_str --> GET /1mb.txt HTTP/1.1
+
+length--> 22
+ -- READING BUFFER --
+temp_str --> Connection: Close
+
+length--> 18
+ -- READING BUFFER --
+temp_str --> 
+
+length--> 2
+CONNECTION TYPE --> NONPERSISTENT
+Final path --> /Users/absheth/course/2-networks/assignment2/cpp/1mb.txt
+SENT SUCCESS RESPONSE
+
+
+----------------------------Request served: THIS DIVIDES PERSISTENT AND NON-PERSISTENT----------------------------
+
+
+Now listening.. 
+Thread spawned
+
+
+****** SERVING NOW ******
+ -- READING BUFFER --
+temp_str --> GET /1mb.txt HTTP/1.1
+
+length--> 22
+ -- READING BUFFER --
+temp_str --> Connection: Close
+
+length--> 18
+ -- READING BUFFER --
+temp_str --> 
+
+length--> 2
+CONNECTION TYPE --> NONPERSISTENT
+Final path --> /Users/absheth/course/2-networks/assignment2/cpp/1mb.txt
+SENT SUCCESS RESPONSE
+
+
+----------------------------Request served: THIS DIVIDES PERSISTENT AND NON-PERSISTENT----------------------------
+
+
+Now listening.. 
+Thread spawned
+
+
+****** SERVING NOW ******
+ -- READING BUFFER --
+temp_str --> GET /1mb.txt HTTP/1.1
+
+length--> 22
+ -- READING BUFFER --
+temp_str --> Connection: Close
+
+length--> 18
+ -- READING BUFFER --
+temp_str --> 
+
+length--> 2
+CONNECTION TYPE --> NONPERSISTENT
+Final path --> /Users/absheth/course/2-networks/assignment2/cpp/1mb.txt
+SENT SUCCESS RESPONSE
+
+
+----------------------------Request served: THIS DIVIDES PERSISTENT AND NON-PERSISTENT----------------------------
+
+
