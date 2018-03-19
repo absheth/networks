@@ -18,25 +18,36 @@
 // -----------------------------------------------------------------------
 
 #define PACKET_SIZE 1472
+#define DATA_SIZE 1460
 // struct message {
 //     char data[DATA_SIZE];
 // };
 
 struct pkt {
     unsigned int seq_num;
-    char ack_flg;  // THINK
+    unsigned int ackno;
+    char ack_flg;
     char *load;
 };
-unsigned int chartoint(char *p_charstream, int offset);
-void inttochar(char *p_char, unsigned int p_number, int offset);
+unsigned int char_to_int(char *p_charstream, int offset);
+unsigned short char_to_short(char *p_charstream, int offset);
+void number_to_char(char *p_char, unsigned short p_short_num, unsigned int p_seqnum,
+                    unsigned int p_ackno, int p_offset);
+void init_packet(pkt *p_packet);
 void parse_packet(char *p_receive_buffer, pkt *p_packet);
+// -----------------------------------------------------------------------
+unsigned int current_seqnum = 0;
+unsigned short receive_window;
+unsigned int current_ackno = 0;
+char padding = '-';
+int window_size;
+
 // -----------------------------------------------------------------------
 void perror(const char *str);
 void service_request(int connFD);
 void quit(std::string p_error_message);
 int Trim(char *buffer);
 int start_server();
-ssize_t Writeline(int sockd, const void *vptr, size_t n);
 int StrUpper(char *buffer);
 void trim(std::string &s);
 #define PORT 9158
@@ -59,6 +70,8 @@ int main(int argc, char const *argv[]) {
     std::cout << "argc --> " << argc << '\n';
     working_directory = getenv("PWD");
     std::cout << "working_directory --> " << working_directory << '\n';
+    // window_size = atoi(argv[1]);
+    window_size = 2;
     //--------------------------------------------
     if (start_server() != 0) {
         std::cout << "Server did not start." << '\n';
@@ -67,18 +80,18 @@ int main(int argc, char const *argv[]) {
     //--------------------------------------------
     int count = 0;
     clientlen = sizeof(clientaddr);
-    while (1) {
-        service_request(listen_socket);
-        std::cout << "******HERE******" << '\n';
-        std::cout << "count--> " << count++ << '\n';
-        std::cout << '\n';
-    }
+    // while (1) {
+    service_request(listen_socket);
+    std::cout << "******HERE******" << '\n';
+    std::cout << "count--> " << count++ << '\n';
+    std::cout << '\n';
+    // }
     return 0;
 }
 
 // -----------------------------------------------------------------------
 void service_request(int connFD) {
-    int sum = 0;
+    /* int sum = 0;
     std::cout << '\n';
     std::cout << "SERVING NOW.." << '\n';
     char receive_buffer[PACKET_SIZE];
@@ -88,21 +101,94 @@ void service_request(int connFD) {
                               (struct sockaddr *)&clientaddr, (socklen_t *)&clientlen);
     std::cout << "received_bytes--> " << received_bytes << std::endl;
     pkt received_pkt;
+    init_packet(&received_pkt);
     parse_packet(receive_buffer, &received_pkt);
-    unsigned int seq_num = chartoint(receive_buffer, 1);
-    std::cout << "seq_num --> " << seq_num << std::endl;
-    std::cout << "Request --> " << received_pkt.load[0] << std::endl;
-    
-    
-    std::free(received_pkt.load); // FREE MEMORY
-    return;
-    if (received_bytes < 0) {
-        
-    } else if (received_bytes > MAXBUFFERSIZE) {
-        
+    // unsigned int seq_num = char_to_int(receive_buffer, 4);
+    std::cout << "seq_num --> " << received_pkt.seq_num << std::endl;
+    std::cout << "Request --> " << received_pkt.load << std::endl;
+    std::cout << "Request length --> " << strlen(received_pkt.load) << std::endl;
+    std::cout << "ackno --> " << received_pkt.ackno << std::endl;
+    std::cout << "receive_window--> " << receive_window << std::endl;
+    std::cout << "ackflg --> " << received_pkt.ack_flg << std::endl;
+    // --------------------
+    FILE *f = fopen(received_pkt.load, "rb");*/
+    FILE *f = fopen("1mb.txt", "rb");
+    fseek(f, 0, SEEK_END);
+    long fsize = ftell(f);
+    fseek(f, 0, SEEK_SET);
+
+    char *file = (char *)malloc(fsize + 1);
+    fread(file, fsize, 1, f);
+    fclose(f);
+    // std::free(received_pkt.load);  // FREE MEMORY
+    // -------------------_
+    file[fsize] = 0;
+    // std::cout << "FILE--> " << file << std::endl;
+    std::cout << "FILE SIZE --> " << fsize << std::endl;
+
+    // unsigned int l_seq_no = received_pkt.seq_num;
+    // unsigned int l_ack_no = received_pkt.ackno;
+
+    unsigned int l_seq_no = 0;
+    unsigned int l_ack_no = 0;
+    char l_ack_flg = '0';
+    unsigned int l_waiting_seq_no = 0;
+    int window_count = 0;
+    int isWaitingSet = 0;
+    while (current_seqnum < fsize) {
+        // First, send packets equal to the window size
+    NEXT_PACKET:
+        while (window_count < window_size) {
+            /*pkt send_pkt;
+            init_packet(&send_pkt);
+            send_pkt.seq_num = current_seqnum;
+            send_pkt.ackno = current_ackno;
+            send_pkt.ack_flg = '0';
+            send_pkt.load[0] = padding;
+            send_pkt.load[1] = send_pkt.ack_flg;
+            number_to_char(send_pkt.load, receive_window, send_pkt.seq_num, send_pkt.ackno, 2);
+            memcpy(send_pkt.load + 12, file + current_seqnum, DATA_SIZE);*/
+            // ********************************************
+
+            // ********************************************
+
+            if (!isWaitingSet) {
+                l_waiting_seq_no = DATA_SIZE;
+                isWaitingSet = 1;
+            }
+            current_seqnum += DATA_SIZE;
+            window_count++;
+
+            std::cout << "current_seqnum -->" << current_seqnum << std::endl;
+            std::cout << "l_waiting_seq_no --> " << l_waiting_seq_no << std::endl;
+            std::cout << std::endl;
+        }
+        // TIMER GOES SOMEWHERE HERE
+
+        // GOTO RECEIVE BLOCKING CALL : recvfrom();
+
+        // CHeck for the ack flag .
+        // Suppose you receive a packet with an ack = 1 and service_request
+        // ASSUMPTION: UDP does all the error checking. So data will be error free.
+        if (l_ack_flg == '1') {
+            if (l_ack_no - 1 == l_waiting_seq_no) {
+                window_count--;
+                // LOGIC FOR LOWEST WAITING SEQNO
+                // GOTO NEXT_PACKET
+                //
+            } else {
+                // GRAB ANOTHER PACKET
+                // GOTO RECEIVE BLOCKING CALL
+            }
+        } else {
+            // THINK
+        }
+        break;
     }
-    
-    // return 0;
+    // SEND A BLANK PACKET TO INDICATE THE END OF FILE.
+
+    std::free(file);
+    return;
 }
 
 // -----------------------------------------------------------------------
@@ -161,46 +247,72 @@ int start_server() {
     return SUCCESS;
 }
 
-// -----------------------------------------------------------------------
 /* Convert unsigned char array to int */
-unsigned int chartoint(char *p_charstream, int offset) {
-    unsigned char temp[4];
-    std::memset(temp, 0, 4);
-    temp[0] = p_charstream[offset + 0];
-    temp[1] = p_charstream[offset + 1];
-    temp[2] = p_charstream[offset + 2];
-    temp[3] = p_charstream[offset + 3];
-    unsigned int seq = (temp[0] << 24) | (temp[1] << 16) | (temp[2] << 8) | temp[3];
-
-    return seq;
-
-    // return ((unsigned char)p_charstream[offset+0] << 24) | ((unsigned char)p_charstream[offset+1]
-    // << 16) | ((unsigned char)p_charstream[offset+2] << 8) | (unsigned char)p_charstream[offset+3];
-
-    // return (p_charstream[0] << 24) | (p_charstream[1] << 16) | (p_charstream[2] << 8) |
-    // p_charstream[3];
+unsigned int char_to_int(char *p_charstream, int p_offset) {
+    // char temp[4];
+    // memset(temp, 0, 4);
+    // temp[0] = p_charstream[0];
+    // temp[1] = p_charstream[1];
+    // temp[2] = p_charstream[2];
+    // temp[3] = p_charstream[3];
+    // return (temp[0] << 24) | (temp[1] << 16) |
+    //       (temp[2] << 8) | temp[3];
+    return ((unsigned char)p_charstream[p_offset + 0] << 24) |
+           ((unsigned char)p_charstream[p_offset + 1] << 16) |
+           ((unsigned char)p_charstream[p_offset + 2] << 8) |
+           (unsigned char)p_charstream[p_offset + 3];
 }
-/* Convert unsigned into char array of 4 bytes */
-void inttochar(char *p_char, unsigned int p_number, int p_offset) {
-    // p_char[0] = char((p_number >> 24) & 0xFF);
-    // p_char[1] = char((p_number >> 16) & 0xFF);
-    // p_char[2] = char((p_number >> 8) & 0xFF);
-    // p_char[3] = char(p_number & 0xFF);
+/* Converts char array to unsigned hort */
+unsigned short char_to_short(char *p_charstream, int p_offset) {
+    return ((unsigned char)p_charstream[p_offset + 0] << 24) |
+           (unsigned char)p_charstream[p_offset + 1];
+}
 
-    p_char[p_offset + 0] = (p_number >> 24) & 0xFF;
-    p_char[p_offset + 1] = (p_number >> 16) & 0xFF;
-    p_char[p_offset + 2] = (p_number >> 8) & 0xFF;
-    p_char[p_offset + 3] = p_number & 0xFF;
-    // printf("%x", p_char[0]);
+/* Convert unsigned into char array of 4 bytes */
+void number_to_char(char *p_char, unsigned short p_short_num, unsigned int p_seqnum,
+                    unsigned int p_ackno, int p_offset) {
+    // converting receive_window
+    p_char[p_offset + 0] = (p_short_num >> 8) & 0xFF;
+    p_char[p_offset + 1] = p_short_num & 0xFF;
+
+    // converting current_seqnum
+    p_char[p_offset + 2] = (p_seqnum >> 24) & 0xFF;
+    p_char[p_offset + 3] = (p_seqnum >> 16) & 0xFF;
+    p_char[p_offset + 4] = (p_seqnum >> 8) & 0xFF;
+    p_char[p_offset + 5] = p_seqnum & 0xFF;
+
+    // converting ackno
+    p_char[p_offset + 6] = (p_ackno >> 24) & 0xFF;
+    p_char[p_offset + 7] = (p_ackno >> 16) & 0xFF;
+    p_char[p_offset + 8] = (p_ackno >> 8) & 0xFF;
+    p_char[p_offset + 9] = p_ackno & 0xFF;
+}
+// -----------------------------------------------------------------------
+void init_packet(pkt *p_packet) {
+    // p_packet = (pkt *)calloc()
+    p_packet->seq_num = 0;
+    p_packet->ackno = 0;
+    p_packet->ack_flg = '0';
+    // int load_size = (PACKET_SIZE - ((2*sizeof(char)) + (2*sizeof(unsigned int) + sizeof(unsigned
+    // short))));
+    int load_size = PACKET_SIZE;
+    p_packet->load = (char *)calloc(load_size, sizeof(char));
+    memset(p_packet->load, 0, PACKET_SIZE);
 }
 // -----------------------------------------------------------------------
 void parse_packet(char *p_receive_buffer, pkt *p_packet) {
-    int load_size = (PACKET_SIZE - (sizeof(char) + sizeof(unsigned int)));
-    p_packet->ack_flg = p_receive_buffer[0];
-    p_packet->seq_num = chartoint(p_receive_buffer, 1);
-    p_packet->load = (char *)calloc(load_size, sizeof(char));
-    std::cout << "size of load --> " << load_size << std::endl;
-    std::memset(p_packet->load, 0, load_size);
-    std::memcpy(p_packet->load, p_receive_buffer + 5, load_size);
-    std::cout << "p_packet->seq_num --> " << p_packet->seq_num << std::endl;
+    p_packet->ack_flg = p_receive_buffer[1];
+    receive_window = char_to_short(p_receive_buffer, 2);
+    p_packet->seq_num = char_to_int(p_receive_buffer, 4);
+    p_packet->ackno = char_to_int(p_receive_buffer, 8);
+    memcpy(p_packet->load, p_receive_buffer + 12, PACKET_SIZE);
+
+    // // int load_size = (PACKET_SIZE - (sizeof(char) + sizeof(unsigned int)));
+    // p_packet->ack_flg = p_receive_buffer[0];
+    // //p_packet->seq_num = chartoint(p_receive_buffer, 1);
+    // p_packet->load = (char *)calloc(load_size, sizeof(char));
+    // std::cout << "size of load --> " << load_size << std::endl;
+    // memset(p_packet->load, 0, load_size);
+    // memcpy(p_packet->load, p_receive_buffer + 5, load_size);
+    // std::cout << "p_packet->seq_num --> " << p_packet->seq_num << std::endl;
 }

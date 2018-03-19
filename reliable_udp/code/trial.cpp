@@ -1,6 +1,8 @@
 #include <climits>
 #include <cstring>
 #include <iostream>
+#include <iterator>
+#include <list>
 #include <sstream>
 int chartoint(char* p_charstream);
 void inttochar(char* p_char, int p_number);
@@ -12,7 +14,7 @@ struct pkt {
 };
 
 int main(int argc, char** argv) {
-    std::cout << std::endl;
+    /* std::cout << std::endl;
     std::cout << "size of char --> " << sizeof(char) << std::endl;
     std::cout << "size of int --> " << sizeof(int) << std::endl;
     // std::stringstream ss;
@@ -29,7 +31,7 @@ int main(int argc, char** argv) {
               << strlen(packet.payload) << " | size: " << sizeof(packet.payload) << std::endl;
     std::cout << "Packet.acknum --> " << packet.acknum << std::endl;
     std::cout << "MAX INT --> " << UINT_MAX << std::endl;
-
+    */
     /*
     unsigned char bytes[4];
     bytes[0] = (n >> 24) & 0xFF;
@@ -44,7 +46,7 @@ int main(int argc, char** argv) {
     */
 
     //***************************************************
-    char buffer[20];
+    /*char buffer[20];
     // unsigned long n = UINT_MAX - 1;
     unsigned long n = 54;
     std::cout << std::endl;
@@ -52,15 +54,15 @@ int main(int argc, char** argv) {
     char char_ptr[4];
     memset(char_ptr, 0, 4);
     inttochar(&char_ptr[0], n);
-    printf("Converted to 4 chars: %x %x %x %x\n", char_ptr[0], (unsigned char)char_ptr[1], char_ptr[2],
-           char_ptr[3]);
+    printf("Converted to 4 chars: %x %x %x %x\n", char_ptr[0], (unsigned char)char_ptr[1],
+    char_ptr[2], char_ptr[3]);
 
     std::cout << "char_ptr --> " << char_ptr << std::endl;
     std::cout << "AKASH --> " << char_ptr[0] << char_ptr[1]<< char_ptr[2]<< char_ptr[3]<< std::endl;
     unsigned int z = chartoint(&char_ptr[0]);
     std::cout << "Converted back to int --> " << z << std::endl;
     memcpy(buffer, char_ptr, 4);
-    
+
     buffer[0] = char_ptr[0];
     buffer[1] = char_ptr[1];
     buffer[2] = char_ptr[2];
@@ -79,7 +81,7 @@ int main(int argc, char** argv) {
     std::cout << "buffer --> " << buffer << std::endl;
     for (int i = 4; i < 14; i++) {
         std::cout << "buffer "<< i << " --> " << buffer[i] << std::endl;
-        
+
     }
     unsigned int q = chartoint(&buffer[0]);
     std::cout << "Conveted back to int --> " << q << std::endl;
@@ -87,7 +89,6 @@ int main(int argc, char** argv) {
     unsigned char r = 'a';
     std::cout << "p --> " << (int)p << std::endl;
     std::cout << "p --> " << (int)(char)r << std::endl;
-    //***************************************************
 
     std::stringstream ss;
     ss << buffer;
@@ -98,7 +99,42 @@ int main(int argc, char** argv) {
     // char temp = '?';
     //
     // printf("%x\n",(char)char_ptr[3]);
-    // printf("%x\n",(unsigned char)(char)char_ptr[3]);
+    // printf("%x\n",(unsigned char)(char)char_ptr[3]);*/
+    int a = 3;
+    if (a) {
+        std::cout << "TRUE for " << a << std::endl;
+
+    } else {
+        std::cout << "FALSE for " << a << std::endl;
+    }
+    std::list<unsigned int> listOfNumbers;
+    // Inserting elements at end in list
+    listOfNumbers.push_back(5);
+    listOfNumbers.push_back(6);
+
+    // Inserting elements at front in list
+    listOfNumbers.push_front(2);
+    listOfNumbers.push_front(1);
+
+    // Iterating over list elements and display them
+    std::list<unsigned int>::iterator it = listOfNumbers.begin();
+    while (it != listOfNumbers.end()) {
+        std::cout << (*it) << " ";
+        it++;
+    }
+    std::cout << std::endl;
+
+    // Inserting elements in between the list using
+    // insert(pos,elem) member function. Let's iterate to
+    // 3rd position
+    it = listOfNumbers.begin();
+    it++;
+    it++;
+    // Iterator 'it' is at 3rd position.
+    listOfNumbers.insert(it, 4);
+    int index = std::distance(listOfNumbers.begin(), it);
+    std::cout << "index --> " << index << std::endl;
+    
     return 0;
 }
 
@@ -111,11 +147,11 @@ int chartoint(char* p_charstream) {
 /* Convert unsigned into char array of 4 bytes */
 void inttochar(char* p_char, int p_number) {
     unsigned char x;
-    //x = 75 & 0xFF;
-    //printf("INTTOCHAR --> %x", x);
-    //char l = x;
-    //printf("here --> %d %c ", int(l), l);
-    //std::cout << std::endl;
+    // x = 75 & 0xFF;
+    // printf("INTTOCHAR --> %x", x);
+    // char l = x;
+    // printf("here --> %d %c ", int(l), l);
+    // std::cout << std::endl;
     x = (p_number >> 24) & 0xFF;
     p_char[0] = x;
     x = (p_number >> 16) & 0xFF;
