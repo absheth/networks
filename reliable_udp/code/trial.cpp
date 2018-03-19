@@ -4,6 +4,7 @@
 #include <iterator>
 #include <list>
 #include <sstream>
+#include <algorithm>
 int chartoint(char* p_charstream);
 void inttochar(char* p_char, int p_number);
 
