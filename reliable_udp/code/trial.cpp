@@ -6,6 +6,9 @@
 #include <sstream>
 int chartoint(char* p_charstream);
 void inttochar(char* p_char, int p_number);
+
+int get_element_index(std::list<unsigned int>& p_list,  unsigned int p_element); 
+unsigned int get_min_element(std::list<unsigned int>& p_list);
 struct pkt {
     int seqnum;
     int acknum;
@@ -109,12 +112,12 @@ int main(int argc, char** argv) {
     }
     std::list<unsigned int> listOfNumbers;
     // Inserting elements at end in list
-    listOfNumbers.push_back(5);
-    listOfNumbers.push_back(6);
+    listOfNumbers.push_back(12);
+    listOfNumbers.push_back(11);
 
     // Inserting elements at front in list
-    listOfNumbers.push_front(2);
-    listOfNumbers.push_front(1);
+    listOfNumbers.push_front(8);
+    listOfNumbers.push_front(9);
 
     // Iterating over list elements and display them
     std::list<unsigned int>::iterator it = listOfNumbers.begin();
@@ -132,8 +135,35 @@ int main(int argc, char** argv) {
     it++;
     // Iterator 'it' is at 3rd position.
     listOfNumbers.insert(it, 4);
+    // Iterating over list elements and display them
+    it = listOfNumbers.begin();
+    while (it != listOfNumbers.end()) {
+        std::cout << (*it) << "  ";
+        it++;
+    }
+
     int index = std::distance(listOfNumbers.begin(), it);
     std::cout << "index --> " << index << std::endl;
+
+    // Erasing elements in between the list using
+    // erase(position) member function. Let's iterate to
+    // 3rd position
+    it = listOfNumbers.begin();
+    it++;
+    it++;
+    // Iterator 'it' is at 3rd position. Now erase this element.
+    listOfNumbers.erase(it);
+
+    // Iterating over list elements and display them
+    it = listOfNumbers.begin();
+    while (it != listOfNumbers.end()) {
+        std::cout << (*it) << "  ";
+        it++;
+    }
+    int index1 = get_element_index(listOfNumbers, 1);
+    std::cout << "index1 --> " << index1 << std::endl;
+    unsigned int min_element = get_min_element(listOfNumbers);
+    std::cout << "min_element --> " << min_element << std::endl;
     
     return 0;
 }
@@ -167,3 +197,16 @@ void inttochar(char* p_char, int p_number) {
     // p_char[3] = char(p_number & 0xFF);
 }
 // -----------------------------------------------------------------------
+int get_element_index(std::list<unsigned int>& p_list,  unsigned int p_element) {
+    int index = 0;
+    std::list<unsigned int>::iterator findIter = std::find(p_list.begin(), p_list.end(), p_element);
+    index = std::distance(p_list.begin(), findIter);
+
+    return index;
+}
+unsigned int get_min_element(std::list<unsigned int>& p_list) {
+    unsigned int l_element = 0;
+    std::list<unsigned int>::iterator iter = std::min_element(p_list.begin(), p_list.end());
+    l_element = *iter;
+    return l_element;
+}
