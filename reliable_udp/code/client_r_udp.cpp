@@ -12,30 +12,30 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <chrono>
+#include <climits>
 #include <iostream>
 #include <sstream>
+
 extern void perror(const char *__s);
+unsigned int chartoint(char *p_charstream, int offset);
+void inttochar(char *p_char,unsigned int p_number, int offset);
+
 #define SUCCESS 0
 #define FAILURE -1
-#define MAXBUFFERSIZE 99999
+#define MAXBUFFERSIZE 1000000000// 999999999 
+
+#define PACKET_SIZE 1472
 // -----------------------------------------------------------------------
-
-#define DATA_SIZE 1560
-struct message {
-    char data[DATA_SIZE];
-};
-
 struct pkt {
-    int seq_num;
-    int ack_num;
-    char ack_flg;  // THINK
-    char load[DATA_SIZE];
+    unsigned int seq_num;
+    char ack_flg;   
+    char load[PACKET_SIZE];
 };
 
-void make_packet_data(char *p_data_str, pkt p_packet);
 
 // -----------------------------------------------------------------------
 int main(int argc, char const *argv[]) {
+    std::cout << "AKASH SHETH" << std::endl;
     std::cout << '\n';
     std::cout << "---------------------------- START ----------------------------" << '\n';
     int socketFD;
@@ -43,24 +43,9 @@ int main(int argc, char const *argv[]) {
     int serverlen;
     struct sockaddr_in serveraddr;
     struct hostent *server;
-    int total_files;
-    char buffer[MAXBUFFERSIZE];
-    char clientIP[INET6_ADDRSTRLEN];
     // -----------------------------------------------------------------------
-    std::cout << "argc --> " << argc << '\n';
-    // std::string server_host = argv[1];
-    // int server_port = atoi(argv[2]);
     std::string server_host = "localhost";
     int server_port = 9158;
-    std::string http_rqst = "GET /1mb.txt HTTP/1.1";
-    /*
-    total_files = argc - 3;
-    std::string files[2];
-    int i;
-    for (i = 3; i < argc; i++) {
-        files[i - 3] = argv[i];
-    }
-    */
     // -----------------------------------------------------------------------
     socketFD = socket(AF_INET, SOCK_DGRAM, 0);
     std::cout << "SOCKET --> " << socketFD << std::endl;
@@ -82,41 +67,33 @@ int main(int argc, char const *argv[]) {
     std::cout << "Port ==> " << server_port << '\n';
     serverlen = sizeof(serveraddr);
     // -----------------------------------------------------------------------
-    // TRIAL 
+    
+  
+    // MAKE REQUEST
+    std::string http_rqst = "rqst:1mb.txt";
     pkt rqst_packet;
-    rqst_packet.ack_num = -1;   // THINK
-    rqst_packet.ack_flg = 'x';  // or a
-    rqst_packet.seq_num = 0;    // THINK
-
-    std::stringstream request;
-    request << rqst_packet.ack_num;  // ERROR. NEEDS TO BE FIXED. CANNOT BE DONE THIS WAY.
-    request << ",";
-    request << rqst_packet.ack_flg;  // ERROR. NEEDS TO BE FIXED. CANNOT BE DONE THIS WAY.
-    request << ",";
-    request << rqst_packet.seq_num;  // ERROR. NEEDS TO BE FIXED. CANNOT BE DONE THIS WAY.
-    request << ",";
-    request << http_rqst;
-    std::cout << "REQUEST --> " << request.str().c_str() << " | length = " << request.str().length()
-              << std::endl;
-    std::cout << "" << std::endl;
-    strcpy(rqst_packet.load, request.str().c_str());
-    std::cout << "rqst_packet.ack_num --> " << rqst_packet.ack_num << std::endl;
-    std::cout << "rqst_packet.ack_flg --> " << rqst_packet.ack_flg << std::endl;
-    std::cout << "rqst_packet.seq_num --> " << rqst_packet.seq_num << std::endl;
-    std::cout << "rqst_packet.load --> " << rqst_packet.load << std::endl;
-
-    return 0;
-
+    rqst_packet.ack_flg = '0'; 
+    rqst_packet.seq_num = 54;
+    std::memset(rqst_packet.load, 0, PACKET_SIZE);
+    rqst_packet.load[0] = rqst_packet.ack_flg;
+    inttochar(rqst_packet.load, rqst_packet.seq_num, 1);
+    std::memcpy(rqst_packet.load+5, http_rqst.c_str(), http_rqst.length());
+    unsigned int a = chartoint(rqst_packet.load, 1);
+    std::cout << "Converted back --> " << a << std::endl;
+    
+    //***************************************************
     auto start = std::chrono::high_resolution_clock::now();
-    if (sendto(socketFD, request.str().c_str(), request.str().length(), 0,
+    if (sendto(socketFD, rqst_packet.load, PACKET_SIZE, 0,
                (struct sockaddr *)&serveraddr, serverlen) < 0) {
         perror("sending error");
         return -1;
     }
+
+    return 0;
     int size = 0;
     std::cout << "------------ RESPONSE START ------------" << '\n';
-    while (1) {
-        if ((received = recvfrom(socketFD, buffer, MAXBUFFERSIZE, 0, (struct sockaddr *)&serveraddr,
+   /* while (1) {
+        if ((received = recvfrom(socketFD, buffer, PACKET_SIZE, 0, (struct sockaddr *)&serveraddr,
                                  (socklen_t *)&serverlen)) == FAILURE) {
             perror("receive error");
             exit(-1);
@@ -128,7 +105,7 @@ int main(int argc, char const *argv[]) {
         size += received;
         std::cout << buffer << '\n';
         memset(buffer, 0, sizeof buffer);
-    }
+    }*/
 
     close(socketFD);
     std::cout << "------------ RESPONSE END ------------" << '\n';
@@ -140,13 +117,37 @@ int main(int argc, char const *argv[]) {
     std::cout << "Elapsed time: " << elapsed.count() << " s\n";
     // std::cout << '\n';
     std::cout << "---------------------------- END ----------------------------" << '\n';
+    //***************************************************
     return 0;
 }
 // -----------------------------------------------------------------------
-void make_packet_data(char *p_data_str, pkt p_packet) {
-    std::cout << "" << std::endl;
-    std::cout << "" << std::endl;
-    std::cout << "" << std::endl;
-    std::cout << "" << std::endl;
-    std::cout << "" << std::endl;
+/* Convert unsigned char array to int */
+unsigned int chartoint(char* p_charstream, int offset) {
+    // char temp[4];
+    // std::memset(temp, 0, 4);
+    // temp[0] = p_charstream[0];
+    // temp[1] = p_charstream[1];
+    // temp[2] = p_charstream[2];
+    // temp[3] = p_charstream[3];
+    // return (temp[0] << 24) | (temp[1] << 16) |
+    //       (temp[2] << 8) | temp[3];
+
+
+    return ((unsigned char)p_charstream[offset+0] << 24) | ((unsigned char)p_charstream[offset+1] << 16) |
+          ((unsigned char)p_charstream[offset+2] << 8) | (unsigned char)p_charstream[offset+3];
+
+    // return (p_charstream[0] << 24) | (p_charstream[1] << 16) | (p_charstream[2] << 8) | p_charstream[3];
 }
+
+
+/* Convert unsigned into char array of 4 bytes */
+void inttochar(char* p_char, unsigned int p_number, int offset) {
+    std::cout << "p_number --> " << p_number << std::endl;
+         
+    p_char[offset+0] = (p_number >> 24) & 0xFF;
+    p_char[offset+1] = (p_number >> 16) & 0xFF;
+    p_char[offset+2] = (p_number >> 8) & 0xFF;
+    p_char[offset+3] = p_number & 0xFF;
+    // printf("%x", p_char[0]);
+}
+// -----------------------------------------------------------------------
