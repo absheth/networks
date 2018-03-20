@@ -12,13 +12,18 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <time.h>
 #include <unistd.h>
+#include <algorithm>
 #include <fstream>
+#include <list>
 #include <sstream>
+
 // -----------------------------------------------------------------------
 
 #define PACKET_SIZE 1472
 #define DATA_SIZE 1460
+#define HEADER_SIZE 12
 // struct message {
 //     char data[DATA_SIZE];
 // };
@@ -36,12 +41,22 @@ void number_to_char(char *p_char, unsigned short p_short_num, unsigned int p_seq
 void init_packet(pkt *p_packet);
 void parse_packet(char *p_receive_buffer, pkt *p_packet);
 // -----------------------------------------------------------------------
-unsigned int current_seqnum = 0;
-unsigned short receive_window;
+unsigned int total_sent = 0;
+unsigned short receive_window = 0;
 unsigned int current_ackno = 0;
 char padding = '-';
 int window_size;
 
+// -----------------------------------------------------------------------
+// LIST_FUNCTIONS
+
+int get_element_index(std::list<unsigned int> &p_list, unsigned int p_element);
+unsigned int get_min_element(std::list<unsigned int> &p_list);
+unsigned int get_max_element(std::list<unsigned int> &p_list);
+int erase_element(std::list<unsigned int> *p_list, unsigned int p_element);
+void print_list(std::list<unsigned int> &p_list);
+
+std::list<unsigned int> sent_list;
 // -----------------------------------------------------------------------
 void perror(const char *str);
 void service_request(int connFD);
@@ -71,7 +86,7 @@ int main(int argc, char const *argv[]) {
     working_directory = getenv("PWD");
     std::cout << "working_directory --> " << working_directory << '\n';
     // window_size = atoi(argv[1]);
-    window_size = 2;
+    window_size = 10;
     //--------------------------------------------
     if (start_server() != 0) {
         std::cout << "Server did not start." << '\n';
@@ -80,18 +95,18 @@ int main(int argc, char const *argv[]) {
     //--------------------------------------------
     int count = 0;
     clientlen = sizeof(clientaddr);
-    // while (1) {
+    while (1) {
     service_request(listen_socket);
     std::cout << "******HERE******" << '\n';
     std::cout << "count--> " << count++ << '\n';
     std::cout << '\n';
-    // }
+    }
     return 0;
 }
 
 // -----------------------------------------------------------------------
 void service_request(int connFD) {
-    /* int sum = 0;
+    int sum = 0;
     std::cout << '\n';
     std::cout << "SERVING NOW.." << '\n';
     char receive_buffer[PACKET_SIZE];
@@ -99,20 +114,20 @@ void service_request(int connFD) {
     memset(receive_buffer, 0, PACKET_SIZE);
     received_bytes = recvfrom(connFD, receive_buffer, PACKET_SIZE, 0,
                               (struct sockaddr *)&clientaddr, (socklen_t *)&clientlen);
-    std::cout << "received_bytes--> " << received_bytes << std::endl;
+    // std::cout << "received_bytes--> " << received_bytes << std::endl;
     pkt received_pkt;
     init_packet(&received_pkt);
     parse_packet(receive_buffer, &received_pkt);
-    // unsigned int seq_num = char_to_int(receive_buffer, 4);
-    std::cout << "seq_num --> " << received_pkt.seq_num << std::endl;
-    std::cout << "Request --> " << received_pkt.load << std::endl;
-    std::cout << "Request length --> " << strlen(received_pkt.load) << std::endl;
-    std::cout << "ackno --> " << received_pkt.ackno << std::endl;
-    std::cout << "receive_window--> " << receive_window << std::endl;
-    std::cout << "ackflg --> " << received_pkt.ack_flg << std::endl;
+    //  int seq_num = char_to_int(receive_buffer, 4);
+    //  std::cout << "seq_num --> " << received_pkt.seq_num << std::endl;
+    //  std::cout << "Request --> " << received_pkt.load << std::endl;
+    //  std::cout << "Request length --> " << strlen(received_pkt.load) << std::endl;
+    //  std::cout << "ackno --> " << received_pkt.ackno << std::endl;
+    //  std::cout << "receive_window--> " << receive_window << std::endl;
+    //  std::cout << "ackflg --> " << received_pkt.ack_flg << std::endl;
     // --------------------
-    FILE *f = fopen(received_pkt.load, "rb");*/
-    FILE *f = fopen("1mb.txt", "rb");
+    FILE *f = fopen(received_pkt.load, "rb");
+    // FILE *f = fopen("1mb.txt", "rb");
     fseek(f, 0, SEEK_END);
     long fsize = ftell(f);
     fseek(f, 0, SEEK_SET);
@@ -120,7 +135,7 @@ void service_request(int connFD) {
     char *file = (char *)malloc(fsize + 1);
     fread(file, fsize, 1, f);
     fclose(f);
-    // std::free(received_pkt.load);  // FREE MEMORY
+    std::free(received_pkt.load);  // FREE MEMORY
     // -------------------_
     file[fsize] = 0;
     // std::cout << "FILE--> " << file << std::endl;
@@ -135,60 +150,186 @@ void service_request(int connFD) {
     unsigned int l_waiting_seq_no = 0;
     int window_count = 0;
     int isWaitingSet = 0;
-    while (current_seqnum < fsize) {
+    int sendfromlast = 0;  // 0 means from l_seq_no  || 1 means from total_sent
+    int data_size = 0;
+    int final_sent = 0;
+    while (total_sent <= fsize) {
         // First, send packets equal to the window size
-    NEXT_PACKET:
-        while (window_count < window_size) {
-            /*pkt send_pkt;
+        if (total_sent == fsize) {
+            std::cout << std::endl;
+            std::cout << "****ALL DATA SENT****" << std::endl;
+            // std::cout << "LIST SIZE --> " << sent_list.size() << std::endl;
+
+            if (final_sent) {
+                goto RECEIVE;
+            } else {
+                std::cout << "****************** BREAKING ****************" << std::endl;
+                break;
+            }
+            std::cout << "****ALL DATA SENT****" << std::endl;
+            std::cout << std::endl;
+        }
+    SEND_PACKET:
+        // SEND_PACKET
+        while (sent_list.size() <= window_size) {
+            pkt send_pkt;
             init_packet(&send_pkt);
-            send_pkt.seq_num = current_seqnum;
-            send_pkt.ackno = current_ackno;
-            send_pkt.ack_flg = '0';
+            // send_pkt.seq_num = total_sent;
+            // send_pkt.ackno = current_ackno;
+            // send_pkt.ack_flg = '0';
+            
             send_pkt.load[0] = padding;
-            send_pkt.load[1] = send_pkt.ack_flg;
-            number_to_char(send_pkt.load, receive_window, send_pkt.seq_num, send_pkt.ackno, 2);
-            memcpy(send_pkt.load + 12, file + current_seqnum, DATA_SIZE);*/
+            send_pkt.load[1] = '0';
+            // number_to_char(send_pkt.load, receive_window, total_sent, current_ackno, 2);
+            // memcpy(send_pkt.load + 12, file + total_sent, DATA_SIZE);
+
+            unsigned int send_index;
+            if (sendfromlast) {
+                send_index = total_sent;
+            } else {
+                send_index = l_seq_no;
+            }
+            if (fsize - total_sent < DATA_SIZE) {
+                data_size = fsize - total_sent;
+                final_sent = 1;
+            } else {
+                data_size = DATA_SIZE;
+            } 
+            int packetsize = PACKET_SIZE;
+            if (final_sent) {
+                packetsize = data_size+HEADER_SIZE;
+                send_pkt.load[0] = 'x';
+            } 
+            number_to_char(send_pkt.load, receive_window, total_sent, current_ackno, 2);
+            memcpy(send_pkt.load + 12, file + send_index, data_size);
+            if (sendto(connFD, send_pkt.load, packetsize, 0, (struct sockaddr *)&clientaddr,
+                       clientlen) < 0) {
+                std::free(send_pkt.load);
+                perror("sending error");
+                goto SEND_PACKET;
+            } else {
+                std::free(send_pkt.load);
+            }
+
             // ********************************************
 
             // ********************************************
 
             if (!isWaitingSet) {
-                l_waiting_seq_no = DATA_SIZE;
+                l_waiting_seq_no = total_sent;
                 isWaitingSet = 1;
             }
-            current_seqnum += DATA_SIZE;
-            window_count++;
+            total_sent += data_size;
+            sent_list.push_back(total_sent);
+            std::cout << std::endl;
+            std::cout << "##################" << std::endl;
+            std::cout << "SEND SIZE --> " << data_size << std::endl;
 
-            std::cout << "current_seqnum -->" << current_seqnum << std::endl;
-            std::cout << "l_waiting_seq_no --> " << l_waiting_seq_no << std::endl;
+            std::cout << "SENDING RECEIVE WINDOW --> " << receive_window << std::endl;
+            std::cout << "SENDING TOTAL SENT --> " << total_sent << std::endl;
+            std::cout << "S:: l_waiting_seq_no --> " << l_waiting_seq_no << std::endl;
+            std::cout << "LIST SIZE --> " << sent_list.size() << std::endl;
+            print_list(sent_list);
+            std::cout << std::endl;
+            std::cout << "##################" << std::endl;
             std::cout << std::endl;
         }
         // TIMER GOES SOMEWHERE HERE
+        // char receive_buffer[PACKET_SIZE];
+        int received_bytes;
+    RECEIVE:
+        unsigned int sleep_time = 50;
+        std::cout << "SLEEPING FOR " << sleep_time << " MILLISECONDS " << std::endl;
+        // usleep(sleep_time);
+        std::cout << "SLEEPING FOR " << sleep_time << " MILLISECONDS " << std::endl;
+        memset(receive_buffer, 0, PACKET_SIZE);
+        received_bytes = recvfrom(connFD, receive_buffer, PACKET_SIZE, 0,
+                                  (struct sockaddr *)&clientaddr, (socklen_t *)&clientlen);
+        std::cout << std::endl;
+        std::cout << "************************************************************************"
+                  << std::endl;
+        std::cout << "FILESIZE --> " << fsize << std::endl;
 
+        std::cout << "RECEIVED BYTES --> " << received_bytes << std::endl;
+        char lst_received = receive_buffer[0]; 
+        std::cout << "PADDING --> " << lst_received << std::endl;
+        l_ack_flg = receive_buffer[1];
+        std::cout << "RECEIVED ACK_FLG --> " << l_ack_flg << std::endl;
+
+        receive_window = char_to_short(receive_buffer, 2);
+        std::cout << "RECEIVE WINDOW --> " << receive_window << std::endl;
+        l_seq_no = char_to_int(receive_buffer, 4);
+        std::cout << "RECEIVED SEQUENCE --> " << l_seq_no << std::endl;
+        l_ack_no = char_to_int(receive_buffer, 8);
+        std::cout << "RECEIVED ACKNOWLEDGEMENT --> " << l_ack_no << std::endl;
+        std::cout << "R:: l_waiting_seq_no --> " << l_waiting_seq_no << std::endl;
+        std::cout << "LIST SIZE --> " << sent_list.size() << std::endl;
+        print_list(sent_list);
+        std::cout << std::endl;
+        std::cout << "************************************************************************"
+                  << std::endl;
+        std::cout << std::endl;
+        if (lst_received == 'x') {
+            break;
+        }
         // GOTO RECEIVE BLOCKING CALL : recvfrom();
 
         // CHeck for the ack flag .
         // Suppose you receive a packet with an ack = 1 and service_request
         // ASSUMPTION: UDP does all the error checking. So data will be error free.
+        // NOTE: ACK FLAG WILL ALWAYS BE 1.
         if (l_ack_flg == '1') {
             if (l_ack_no - 1 == l_waiting_seq_no) {
-                window_count--;
+                // ACKNOWLEDGEMENT RECEIVED SUCCESSFULLY. REMOVE IT FROM sent_list.
+                //  int removed_index = erase_element(&sent_list, l_waiting_seq_no);
+                //  if (removed_index > sent_list.size()) {
+                //      // DELETION FAILED.
+                //      // perror("COULD NOT DELETE SEQUENCE NUMBER");
+                //      quit("COULD NOT DELETE SEQUENCE NUMBER");
+                //  } else {
+                //      std::cout << "ELEMENT REMOVED FROM --> " << removed_index << std::endl;
+                //  }
+
                 // LOGIC FOR LOWEST WAITING SEQNO
-                // GOTO NEXT_PACKET
+                if (sent_list.size() > 0) {
+                    l_waiting_seq_no = get_min_element(sent_list);
+                    int removed_index = erase_element(&sent_list, l_waiting_seq_no);
+                    if (removed_index > sent_list.size()) {
+                        // DELETION FAILED.
+                        // perror("COULD NOT DELETE SEQUENCE NUMBER");
+                        quit("COULD NOT DELETE SEQUENCE NUMBER");
+                    } else {
+                        std::cout << "ELEMENT REMOVED FROM --> " << removed_index << std::endl;
+                        std::cout << "NOW WAITING ON --> " << l_waiting_seq_no << std::endl;
+                    }
+                    sendfromlast = 1;
+                } else {
+                    // NOT WAITING FOR ANY.
+                    isWaitingSet = 0;
+                }
+                if (total_sent == fsize && sent_list.size()) {
+                    goto RECEIVE;
+                }
+                // GOTO SEND_PACKET  // NOT SURE
+                // goto SEND_PACKET;
                 //
             } else {
                 // GRAB ANOTHER PACKET
+                goto RECEIVE;
                 // GOTO RECEIVE BLOCKING CALL
             }
         } else {
             // THINK
+            // // GRAB ANOTHER PACKET
         }
-        break;
     }
-    // SEND A BLANK PACKET TO INDICATE THE END OF FILE.
 
+    // SEND A BLANK PACKET TO INDICATE THE END OF FILE.
+    total_sent = 0;
+    l_waiting_seq_no = 0;
+    padding = '-';
+    sent_list.clear();
     std::free(file);
-    return;
 }
 
 // -----------------------------------------------------------------------
@@ -275,7 +416,8 @@ void number_to_char(char *p_char, unsigned short p_short_num, unsigned int p_seq
     p_char[p_offset + 0] = (p_short_num >> 8) & 0xFF;
     p_char[p_offset + 1] = p_short_num & 0xFF;
 
-    // converting current_seqnum
+    // converting seq_num
+
     p_char[p_offset + 2] = (p_seqnum >> 24) & 0xFF;
     p_char[p_offset + 3] = (p_seqnum >> 16) & 0xFF;
     p_char[p_offset + 4] = (p_seqnum >> 8) & 0xFF;
@@ -289,7 +431,6 @@ void number_to_char(char *p_char, unsigned short p_short_num, unsigned int p_seq
 }
 // -----------------------------------------------------------------------
 void init_packet(pkt *p_packet) {
-    // p_packet = (pkt *)calloc()
     p_packet->seq_num = 0;
     p_packet->ackno = 0;
     p_packet->ack_flg = '0';
@@ -316,3 +457,61 @@ void parse_packet(char *p_receive_buffer, pkt *p_packet) {
     // memcpy(p_packet->load, p_receive_buffer + 5, load_size);
     // std::cout << "p_packet->seq_num --> " << p_packet->seq_num << std::endl;
 }
+
+// LIST_FUNCTIONS
+
+// -----------------------------------------------------------------------
+int get_element_index(std::list<unsigned int> &p_list, unsigned int p_element) {
+    int index = 0;
+    std::list<unsigned int>::iterator findIter = std::find(p_list.begin(), p_list.end(), p_element);
+    index = std::distance(p_list.begin(), findIter);
+
+    return index;
+}
+unsigned int get_min_element(std::list<unsigned int> &p_list) {
+    // EMPTY LIST // RETURN -1
+    if (p_list.size() == 0) {
+        return -1;
+    }
+    unsigned int l_element = 0;
+    std::list<unsigned int>::iterator iter = std::min_element(p_list.begin(), p_list.end());
+    l_element = *iter;
+    return l_element;
+}
+
+unsigned int get_max_element(std::list<unsigned int> &p_list) {
+    // EMPTY LIST // RETURN -1
+    if (p_list.size() == 0) {
+        return -1;
+    }
+
+    unsigned int l_element = 0;
+    std::list<unsigned int>::iterator iter = std::max_element(p_list.begin(), p_list.end());
+    l_element = *iter;
+    return l_element;
+}
+
+int erase_element(std::list<unsigned int> *p_list, unsigned int p_element) {
+    int l_element_index = 0;
+    l_element_index = get_element_index(*(p_list), p_element);
+    if (l_element_index == (*p_list).size()) {
+        return l_element_index + 2;
+    }
+    std::list<unsigned int>::iterator it = (*p_list).begin();
+    int count = 1;
+    while (count <= l_element_index) {
+        it++;
+        count++;
+    }
+    (*p_list).erase(it);
+    return l_element_index;
+}
+
+void print_list(std::list<unsigned int> &p_list) {
+    std::list<unsigned int>::iterator it = p_list.begin();
+    while (it != p_list.end()) {
+        std::cout << (*it) << " ";
+        it++;
+    }
+}
+// -----------------------------------------------------------------------

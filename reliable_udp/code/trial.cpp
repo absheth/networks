@@ -1,15 +1,18 @@
+#include <algorithm>
 #include <climits>
 #include <cstring>
 #include <iostream>
 #include <iterator>
 #include <list>
 #include <sstream>
-#include <algorithm>
 int chartoint(char* p_charstream);
 void inttochar(char* p_char, int p_number);
 
-int get_element_index(std::list<unsigned int>& p_list,  unsigned int p_element); 
+int get_element_index(std::list<unsigned int>& p_list, unsigned int p_element);
 unsigned int get_min_element(std::list<unsigned int>& p_list);
+unsigned int get_max_element(std::list<unsigned int>& p_list);
+int erase_element(std::list<unsigned int>* p_list, unsigned int p_element);
+void print_list(std::list<unsigned int>& p_list);
 struct pkt {
     int seqnum;
     int acknum;
@@ -104,28 +107,41 @@ int main(int argc, char** argv) {
     //
     // printf("%x\n",(char)char_ptr[3]);
     // printf("%x\n",(unsigned char)(char)char_ptr[3]);*/
-    int a = 3;
+    /*int a = 3;
     if (a) {
         std::cout << "TRUE for " << a << std::endl;
 
     } else {
         std::cout << "FALSE for " << a << std::endl;
-    }
+    }*/
+
     std::list<unsigned int> listOfNumbers;
     // Inserting elements at end in list
-    listOfNumbers.push_back(12);
+    // for(unsigned int i = 0; i < 100; i++) {
+    //     listOfNumbers.push_back(i);
+    // }
+
+    listOfNumbers.push_back(65535);
     listOfNumbers.push_back(11);
+    listOfNumbers.push_back(1);
 
     // Inserting elements at front in list
     listOfNumbers.push_front(8);
     listOfNumbers.push_front(9);
-
+    // listOfNumbers.push_front(UINT_MAX);
+    print_list(listOfNumbers);
+    std::cout << std::endl;
+    std::cout << "List size --> " << listOfNumbers.size() << std::endl;
+    listOfNumbers.sort();
     // Iterating over list elements and display them
     std::list<unsigned int>::iterator it = listOfNumbers.begin();
     while (it != listOfNumbers.end()) {
         std::cout << (*it) << " ";
         it++;
     }
+
+    std::cout << std::endl;
+    std::cout << "List size --> " << listOfNumbers.size() << std::endl;
     std::cout << std::endl;
 
     // Inserting elements in between the list using
@@ -143,6 +159,8 @@ int main(int argc, char** argv) {
         it++;
     }
 
+    std::cout << std::endl;
+    std::cout << "List size --> " << listOfNumbers.size() << std::endl;
     int index = std::distance(listOfNumbers.begin(), it);
     std::cout << "index --> " << index << std::endl;
 
@@ -155,17 +173,145 @@ int main(int argc, char** argv) {
     // Iterator 'it' is at 3rd position. Now erase this element.
     listOfNumbers.erase(it);
 
+    std::cout << std::endl;
+    std::cout << "List size --> " << listOfNumbers.size() << std::endl;
     // Iterating over list elements and display them
     it = listOfNumbers.begin();
     while (it != listOfNumbers.end()) {
         std::cout << (*it) << "  ";
         it++;
     }
+
+    std::cout << std::endl;
+    std::cout << "List size --> " << listOfNumbers.size() << std::endl;
+    std::cout << std::endl;
+
     int index1 = get_element_index(listOfNumbers, 1);
     std::cout << "index1 --> " << index1 << std::endl;
     unsigned int min_element = get_min_element(listOfNumbers);
     std::cout << "min_element --> " << min_element << std::endl;
-    
+
+    // Iterating over list elements and display them
+    it = listOfNumbers.begin();
+    while (it != listOfNumbers.end()) {
+        std::cout << (*it) << "  ";
+        it++;
+    }
+
+    std::cout << std::endl;
+    std::cout << "List size --> " << listOfNumbers.size() << std::endl;
+    std::cout << std::endl;
+
+    std::cout << "ERASING 1" << std::endl;
+    int erase_index = erase_element(&listOfNumbers, 1);
+    if (erase_index > listOfNumbers.size()) {
+        std::cout << "Element not present int the list." << std::endl;
+    } else {
+        std::cout << "Erased at index --> " << erase_index << std::endl;
+    }
+    // Iterating over list elements and display them
+    it = listOfNumbers.begin();
+    while (it != listOfNumbers.end()) {
+        std::cout << (*it) << "  ";
+        it++;
+    }
+
+    std::cout << std::endl;
+    std::cout << "List size --> " << listOfNumbers.size() << std::endl;
+    std::cout << std::endl;
+
+    std::cout << "ERASING 11" << std::endl;
+    erase_index = erase_element(&listOfNumbers, 11);
+    if (erase_index > listOfNumbers.size()) {
+        std::cout << "Element not present int the list." << std::endl;
+    } else {
+        std::cout << "Erased at index --> " << erase_index << std::endl;
+    }
+
+    // Iterating over list elements and display them
+    it = listOfNumbers.begin();
+    while (it != listOfNumbers.end()) {
+        std::cout << (*it) << "  ";
+        it++;
+    }
+
+    std::cout << std::endl;
+    std::cout << "List size --> " << listOfNumbers.size() << std::endl;
+    std::cout << std::endl;
+    std::cout << std::endl;
+    std::cout << "ERASING 65535" << std::endl;
+    erase_index = erase_element(&listOfNumbers, 65535);
+    if (erase_index > listOfNumbers.size()) {
+        std::cout << "Element not present int the list." << std::endl;
+    } else {
+        std::cout << "Erased at index --> " << erase_index << std::endl;
+    }
+
+    // Iterating over list elements and display them
+    it = listOfNumbers.begin();
+    while (it != listOfNumbers.end()) {
+        std::cout << (*it) << "  ";
+        it++;
+    }
+    std::cout << std::endl;
+    std::cout << "List size --> " << listOfNumbers.size() << std::endl;
+
+    std::cout << std::endl;
+    std::cout << std::endl;
+    std::cout << "ERASING 9" << std::endl;
+    erase_index = erase_element(&listOfNumbers, 9);
+    if (erase_index > listOfNumbers.size()) {
+        std::cout << "Element not present int the list." << std::endl;
+    } else {
+        std::cout << "Erased at index --> " << erase_index << std::endl;
+    }
+
+    // Iterating over list elements and display them
+    it = listOfNumbers.begin();
+    while (it != listOfNumbers.end()) {
+        std::cout << (*it) << "  ";
+        it++;
+    }
+    std::cout << std::endl;
+    std::cout << "List size --> " << listOfNumbers.size() << std::endl;
+    std::cout << std::endl;
+
+    std::cout << std::endl;
+    std::cout << "ERASING 8" << std::endl;
+    erase_index = erase_element(&listOfNumbers, 8);
+    if (erase_index > listOfNumbers.size()) {
+        std::cout << "Element not present int the list." << std::endl;
+    } else {
+        std::cout << "Erased at index --> " << erase_index << std::endl;
+    }
+
+    // Iterating over list elements and display them
+    it = listOfNumbers.begin();
+    while (it != listOfNumbers.end()) {
+        std::cout << (*it) << "  ";
+        it++;
+    }
+    std::cout << std::endl;
+    std::cout << "List size --> " << listOfNumbers.size() << std::endl;
+    std::cout << std::endl;
+
+    min_element = get_min_element(listOfNumbers);
+    if (min_element == UINT_MAX && listOfNumbers.size() == 0) {
+        std::cout << "EMPTY LIST" << std::endl;
+
+    } else {
+        std::cout << "min_element --> " << min_element << " | index --> "
+                  << get_element_index(listOfNumbers, min_element) << std::endl;
+    }
+    unsigned int max_element = get_max_element(listOfNumbers);
+
+    if (min_element == UINT_MAX && listOfNumbers.size() == 0) {
+        std::cout << "EMPTY LIST" << std::endl;
+
+    } else {
+        std::cout << "max_element --> " << max_element << " | index --> "
+                  << get_element_index(listOfNumbers, max_element) << std::endl;
+    }
     return 0;
 }
 
@@ -198,7 +344,7 @@ void inttochar(char* p_char, int p_number) {
     // p_char[3] = char(p_number & 0xFF);
 }
 // -----------------------------------------------------------------------
-int get_element_index(std::list<unsigned int>& p_list,  unsigned int p_element) {
+int get_element_index(std::list<unsigned int>& p_list, unsigned int p_element) {
     int index = 0;
     std::list<unsigned int>::iterator findIter = std::find(p_list.begin(), p_list.end(), p_element);
     index = std::distance(p_list.begin(), findIter);
@@ -206,8 +352,50 @@ int get_element_index(std::list<unsigned int>& p_list,  unsigned int p_element) 
     return index;
 }
 unsigned int get_min_element(std::list<unsigned int>& p_list) {
+    // EMPTY LIST // RETURN -1
+    if (p_list.size() == 0) {
+        return -1;
+    }
     unsigned int l_element = 0;
     std::list<unsigned int>::iterator iter = std::min_element(p_list.begin(), p_list.end());
     l_element = *iter;
     return l_element;
 }
+
+unsigned int get_max_element(std::list<unsigned int>& p_list) {
+    // EMPTY LIST // RETURN -1
+    if (p_list.size() == 0) {
+        return -1;
+    }
+
+    unsigned int l_element = 0;
+    std::list<unsigned int>::iterator iter = std::max_element(p_list.begin(), p_list.end());
+    l_element = *iter;
+    return l_element;
+}
+
+int erase_element(std::list<unsigned int>* p_list, unsigned int p_element) {
+    int l_element_index = 0;
+    l_element_index = get_element_index(*(p_list), p_element);
+    if (l_element_index == (*p_list).size()) {
+        return l_element_index + 2;
+    }
+    std::list<unsigned int>::iterator it = (*p_list).begin();
+    int count = 1;
+    while (count <= l_element_index) {
+        it++;
+        count++;
+    }
+    (*p_list).erase(it);
+    return l_element_index;
+}
+
+void print_list(std::list<unsigned int>& p_list) {
+    std::cout << "PRINTING IN FUNCTION " << std::endl;
+    std::list<unsigned int>::iterator it = p_list.begin();
+    while (it != p_list.end()) {
+        std::cout << (*it) << " ";
+        it++;
+    }
+}
+// -----------------------------------------------------------------------
