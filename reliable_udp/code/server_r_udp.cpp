@@ -45,7 +45,7 @@ unsigned int total_sent = 0;
 unsigned short receive_window = 0;
 unsigned int current_ackno = 0;
 char padding = '-';
-int window_size;
+int window_size = 0;
 
 // -----------------------------------------------------------------------
 // LIST_FUNCTIONS
@@ -56,7 +56,7 @@ unsigned int get_max_element(std::list<unsigned int> &p_list);
 int erase_element(std::list<unsigned int> *p_list, unsigned int p_element);
 void print_list(std::list<unsigned int> &p_list);
 
-std::list<unsigned int> sent_list;
+std::list<unsigned int> ack_waiting_list;
 // -----------------------------------------------------------------------
 void perror(const char *str);
 void service_request(int connFD);
@@ -82,11 +82,12 @@ int clientlen;
 struct hostent *hostp;
 char *hostaddrp;
 int main(int argc, char const *argv[]) {
+    std::cout << "AKASH SHETH - SERVER" << std::endl;
     std::cout << "argc --> " << argc << '\n';
     working_directory = getenv("PWD");
     std::cout << "working_directory --> " << working_directory << '\n';
     // window_size = atoi(argv[1]);
-    window_size = 10;
+    window_size = 3;
     //--------------------------------------------
     if (start_server() != 0) {
         std::cout << "Server did not start." << '\n';
@@ -95,12 +96,12 @@ int main(int argc, char const *argv[]) {
     //--------------------------------------------
     int count = 0;
     clientlen = sizeof(clientaddr);
-    while (1) {
+    // while (1) {
     service_request(listen_socket);
     std::cout << "******HERE******" << '\n';
     std::cout << "count--> " << count++ << '\n';
     std::cout << '\n';
-    }
+    // }
     return 0;
 }
 
@@ -140,6 +141,7 @@ void service_request(int connFD) {
     file[fsize] = 0;
     // std::cout << "FILE--> " << file << std::endl;
     std::cout << "FILE SIZE --> " << fsize << std::endl;
+    std::cout << "WINDOW SIZE --> " << window_size << std::endl;
 
     // unsigned int l_seq_no = received_pkt.seq_num;
     // unsigned int l_ack_no = received_pkt.ackno;
@@ -147,7 +149,7 @@ void service_request(int connFD) {
     unsigned int l_seq_no = 0;
     unsigned int l_ack_no = 0;
     char l_ack_flg = '0';
-    unsigned int l_waiting_seq_no = 0;
+    unsigned int waiting_ack_no = 0;
     int window_count = 0;
     int isWaitingSet = 0;
     int sendfromlast = 0;  // 0 means from l_seq_no  || 1 means from total_sent
@@ -158,7 +160,7 @@ void service_request(int connFD) {
         if (total_sent == fsize) {
             std::cout << std::endl;
             std::cout << "****ALL DATA SENT****" << std::endl;
-            // std::cout << "LIST SIZE --> " << sent_list.size() << std::endl;
+            // std::cout << "LIST SIZE --> " << ack_waiting_list.size() << std::endl;
 
             if (final_sent) {
                 goto RECEIVE;
@@ -171,13 +173,13 @@ void service_request(int connFD) {
         }
     SEND_PACKET:
         // SEND_PACKET
-        while (sent_list.size() <= window_size) {
+        while (ack_waiting_list.size() < window_size) {
             pkt send_pkt;
             init_packet(&send_pkt);
             // send_pkt.seq_num = total_sent;
             // send_pkt.ackno = current_ackno;
             // send_pkt.ack_flg = '0';
-            
+
             send_pkt.load[0] = padding;
             send_pkt.load[1] = '0';
             // number_to_char(send_pkt.load, receive_window, total_sent, current_ackno, 2);
@@ -187,20 +189,28 @@ void service_request(int connFD) {
             if (sendfromlast) {
                 send_index = total_sent;
             } else {
-                send_index = l_seq_no;
+                if (ack_waiting_list.size() > 0) {
+                    send_index = get_min_element(ack_waiting_list);
+                } else {
+                    // THINK // CHECK
+                    send_index = l_seq_no;  // MAY BE MIN FROM THE LIST
+                }
             }
             if (fsize - total_sent < DATA_SIZE) {
                 data_size = fsize - total_sent;
                 final_sent = 1;
             } else {
                 data_size = DATA_SIZE;
-            } 
+            }
+            // FOR LAST PACKET 
             int packetsize = PACKET_SIZE;
             if (final_sent) {
-                packetsize = data_size+HEADER_SIZE;
+                packetsize = data_size + HEADER_SIZE;
                 send_pkt.load[0] = 'x';
-            } 
-            number_to_char(send_pkt.load, receive_window, total_sent, current_ackno, 2);
+            }
+            
+            // number_to_char(send_pkt.load, receive_window, total_sent, current_ackno, 2);
+            number_to_char(send_pkt.load, receive_window, send_index, l_ack_no, 2);
             memcpy(send_pkt.load + 12, file + send_index, data_size);
             if (sendto(connFD, send_pkt.load, packetsize, 0, (struct sockaddr *)&clientaddr,
                        clientlen) < 0) {
@@ -216,21 +226,22 @@ void service_request(int connFD) {
             // ********************************************
 
             if (!isWaitingSet) {
-                l_waiting_seq_no = total_sent;
+                // waiting_ack_no = total_sent;
+                waiting_ack_no = send_index;
                 isWaitingSet = 1;
             }
+             
             total_sent += data_size;
-            sent_list.push_back(total_sent);
+            sendfromlast = 1;
+            ack_waiting_list.push_back(total_sent);
             std::cout << std::endl;
             std::cout << "##################" << std::endl;
             std::cout << "SEND SIZE --> " << data_size << std::endl;
-
             std::cout << "SENDING RECEIVE WINDOW --> " << receive_window << std::endl;
             std::cout << "SENDING TOTAL SENT --> " << total_sent << std::endl;
-            std::cout << "S:: l_waiting_seq_no --> " << l_waiting_seq_no << std::endl;
-            std::cout << "LIST SIZE --> " << sent_list.size() << std::endl;
-            print_list(sent_list);
-            std::cout << std::endl;
+            std::cout << "S:: waiting_ack_no --> " << waiting_ack_no << std::endl;
+            std::cout << "LIST SIZE --> " << ack_waiting_list.size() << std::endl;
+            print_list(ack_waiting_list);
             std::cout << "##################" << std::endl;
             std::cout << std::endl;
         }
@@ -239,9 +250,12 @@ void service_request(int connFD) {
         int received_bytes;
     RECEIVE:
         unsigned int sleep_time = 50;
+        std::cout << std::endl;
+        std::cout << "---------------------------" << std::endl;
         std::cout << "SLEEPING FOR " << sleep_time << " MILLISECONDS " << std::endl;
         // usleep(sleep_time);
-        std::cout << "SLEEPING FOR " << sleep_time << " MILLISECONDS " << std::endl;
+        std::cout << "---------------------------" << std::endl;
+        std::cout << std::endl;
         memset(receive_buffer, 0, PACKET_SIZE);
         received_bytes = recvfrom(connFD, receive_buffer, PACKET_SIZE, 0,
                                   (struct sockaddr *)&clientaddr, (socklen_t *)&clientlen);
@@ -251,7 +265,7 @@ void service_request(int connFD) {
         std::cout << "FILESIZE --> " << fsize << std::endl;
 
         std::cout << "RECEIVED BYTES --> " << received_bytes << std::endl;
-        char lst_received = receive_buffer[0]; 
+        char lst_received = receive_buffer[0];
         std::cout << "PADDING --> " << lst_received << std::endl;
         l_ack_flg = receive_buffer[1];
         std::cout << "RECEIVED ACK_FLG --> " << l_ack_flg << std::endl;
@@ -262,10 +276,9 @@ void service_request(int connFD) {
         std::cout << "RECEIVED SEQUENCE --> " << l_seq_no << std::endl;
         l_ack_no = char_to_int(receive_buffer, 8);
         std::cout << "RECEIVED ACKNOWLEDGEMENT --> " << l_ack_no << std::endl;
-        std::cout << "R:: l_waiting_seq_no --> " << l_waiting_seq_no << std::endl;
-        std::cout << "LIST SIZE --> " << sent_list.size() << std::endl;
-        print_list(sent_list);
-        std::cout << std::endl;
+        std::cout << "R:: waiting_ack_no --> " << waiting_ack_no << std::endl;
+        std::cout << "ACK WAITING LIST" << std::endl;
+        print_list(ack_waiting_list);
         std::cout << "************************************************************************"
                   << std::endl;
         std::cout << std::endl;
@@ -279,10 +292,10 @@ void service_request(int connFD) {
         // ASSUMPTION: UDP does all the error checking. So data will be error free.
         // NOTE: ACK FLAG WILL ALWAYS BE 1.
         if (l_ack_flg == '1') {
-            if (l_ack_no - 1 == l_waiting_seq_no) {
-                // ACKNOWLEDGEMENT RECEIVED SUCCESSFULLY. REMOVE IT FROM sent_list.
-                //  int removed_index = erase_element(&sent_list, l_waiting_seq_no);
-                //  if (removed_index > sent_list.size()) {
+            if (l_ack_no - 1 == waiting_ack_no) {
+                // ACKNOWLEDGEMENT RECEIVED SUCCESSFULLY. REMOVE IT FROM ack_waiting_list.
+                //  int removed_index = erase_element(&ack_waiting_list, waiting_ack_no);
+                //  if (removed_index > ack_waiting_list.size()) {
                 //      // DELETION FAILED.
                 //      // perror("COULD NOT DELETE SEQUENCE NUMBER");
                 //      quit("COULD NOT DELETE SEQUENCE NUMBER");
@@ -291,23 +304,23 @@ void service_request(int connFD) {
                 //  }
 
                 // LOGIC FOR LOWEST WAITING SEQNO
-                if (sent_list.size() > 0) {
-                    l_waiting_seq_no = get_min_element(sent_list);
-                    int removed_index = erase_element(&sent_list, l_waiting_seq_no);
-                    if (removed_index > sent_list.size()) {
+                if (ack_waiting_list.size() > 0) {
+                    waiting_ack_no = get_min_element(ack_waiting_list);
+                    int removed_index = erase_element(&ack_waiting_list, waiting_ack_no);
+                    if (removed_index > ack_waiting_list.size()) {
                         // DELETION FAILED.
                         // perror("COULD NOT DELETE SEQUENCE NUMBER");
                         quit("COULD NOT DELETE SEQUENCE NUMBER");
                     } else {
                         std::cout << "ELEMENT REMOVED FROM --> " << removed_index << std::endl;
-                        std::cout << "NOW WAITING ON --> " << l_waiting_seq_no << std::endl;
+                        std::cout << "NOW WAITING ON --> " << waiting_ack_no << std::endl;
                     }
                     sendfromlast = 1;
                 } else {
                     // NOT WAITING FOR ANY.
                     isWaitingSet = 0;
                 }
-                if (total_sent == fsize && sent_list.size()) {
+                if (total_sent == fsize && ack_waiting_list.size()) {
                     goto RECEIVE;
                 }
                 // GOTO SEND_PACKET  // NOT SURE
@@ -326,9 +339,9 @@ void service_request(int connFD) {
 
     // SEND A BLANK PACKET TO INDICATE THE END OF FILE.
     total_sent = 0;
-    l_waiting_seq_no = 0;
+    waiting_ack_no = 0;
     padding = '-';
-    sent_list.clear();
+    ack_waiting_list.clear();
     std::free(file);
 }
 
@@ -513,5 +526,6 @@ void print_list(std::list<unsigned int> &p_list) {
         std::cout << (*it) << " ";
         it++;
     }
+    std::cout << std::endl;
 }
 // -----------------------------------------------------------------------
