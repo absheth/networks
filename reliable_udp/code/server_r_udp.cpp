@@ -54,6 +54,7 @@ int get_element_index(std::list<unsigned int> &p_list, unsigned int p_element);
 unsigned int get_min_element(std::list<unsigned int> &p_list);
 unsigned int get_max_element(std::list<unsigned int> &p_list);
 int erase_element(std::list<unsigned int> *p_list, unsigned int p_element);
+int remove_lower_than(std::list<unsigned int> *p_list, unsigned int p_element);
 void print_list(std::list<unsigned int> &p_list);
 
 std::list<unsigned int> ack_waiting_list;
@@ -96,12 +97,12 @@ int main(int argc, char const *argv[]) {
     //--------------------------------------------
     int count = 0;
     clientlen = sizeof(clientaddr);
-    // while (1) {
-    service_request(listen_socket);
-    std::cout << "******HERE******" << '\n';
-    std::cout << "count--> " << count++ << '\n';
-    std::cout << '\n';
-    // }
+    while (1) {
+        service_request(listen_socket);
+        std::cout << "******HERE******" << '\n';
+        std::cout << "count--> " << count++ << '\n';
+        std::cout << '\n';
+    }
     return 0;
 }
 
@@ -189,12 +190,12 @@ void service_request(int connFD) {
             if (sendfromlast) {
                 send_index = total_sent;
             } else {
-                if (ack_waiting_list.size() > 0) {
-                    send_index = get_min_element(ack_waiting_list);
-                } else {
-                    // THINK // CHECK
-                    send_index = l_seq_no;  // MAY BE MIN FROM THE LIST
-                }
+                // if (ack_waiting_list.size() > 0) {
+                //     send_index = get_min_element(ack_waiting_list);
+                // } else {
+                // THINK // CHECK
+                send_index = l_seq_no;  // MAY BE MIN FROM THE LIST
+                // }
             }
             if (fsize - total_sent < DATA_SIZE) {
                 data_size = fsize - total_sent;
@@ -202,13 +203,13 @@ void service_request(int connFD) {
             } else {
                 data_size = DATA_SIZE;
             }
-            // FOR LAST PACKET 
+            // FOR LAST PACKET
             int packetsize = PACKET_SIZE;
             if (final_sent) {
                 packetsize = data_size + HEADER_SIZE;
                 send_pkt.load[0] = 'x';
             }
-            
+
             // number_to_char(send_pkt.load, receive_window, total_sent, current_ackno, 2);
             number_to_char(send_pkt.load, receive_window, send_index, l_ack_no, 2);
             memcpy(send_pkt.load + 12, file + send_index, data_size);
@@ -230,7 +231,7 @@ void service_request(int connFD) {
                 waiting_ack_no = send_index;
                 isWaitingSet = 1;
             }
-             
+
             total_sent += data_size;
             sendfromlast = 1;
             ack_waiting_list.push_back(total_sent);
@@ -291,50 +292,52 @@ void service_request(int connFD) {
         // Suppose you receive a packet with an ack = 1 and service_request
         // ASSUMPTION: UDP does all the error checking. So data will be error free.
         // NOTE: ACK FLAG WILL ALWAYS BE 1.
-        if (l_ack_flg == '1') {
-            if (l_ack_no - 1 == waiting_ack_no) {
-                // ACKNOWLEDGEMENT RECEIVED SUCCESSFULLY. REMOVE IT FROM ack_waiting_list.
-                //  int removed_index = erase_element(&ack_waiting_list, waiting_ack_no);
-                //  if (removed_index > ack_waiting_list.size()) {
-                //      // DELETION FAILED.
-                //      // perror("COULD NOT DELETE SEQUENCE NUMBER");
-                //      quit("COULD NOT DELETE SEQUENCE NUMBER");
-                //  } else {
-                //      std::cout << "ELEMENT REMOVED FROM --> " << removed_index << std::endl;
-                //  }
+        // if (l_ack_flg == '1') {
+        if (l_ack_no > waiting_ack_no) {
+            // CLIENT HAS RECEIVED ALL THE DATA BELOW l_ack_no;
+            // set waiting_ack_no to l_ack_no
+            waiting_ack_no = l_ack_no;
+            // REMOVE ALL THE ACK BELOW ack_waiting_list.
+            int waiting_ack_index = remove_lower_than(&ack_waiting_list, waiting_ack_no);
+            std::cout << "ALL THE ELEMENTS BELOW " << waiting_ack_no << "REMOVED." << std::endl;
+            std::cout << "ACK WAITING LIST: " << std::endl;
+            print_list(ack_waiting_list);
 
-                // LOGIC FOR LOWEST WAITING SEQNO
-                if (ack_waiting_list.size() > 0) {
-                    waiting_ack_no = get_min_element(ack_waiting_list);
-                    int removed_index = erase_element(&ack_waiting_list, waiting_ack_no);
-                    if (removed_index > ack_waiting_list.size()) {
-                        // DELETION FAILED.
-                        // perror("COULD NOT DELETE SEQUENCE NUMBER");
-                        quit("COULD NOT DELETE SEQUENCE NUMBER");
-                    } else {
-                        std::cout << "ELEMENT REMOVED FROM --> " << removed_index << std::endl;
-                        std::cout << "NOW WAITING ON --> " << waiting_ack_no << std::endl;
-                    }
-                    sendfromlast = 1;
-                } else {
-                    // NOT WAITING FOR ANY.
-                    isWaitingSet = 0;
-                }
-                if (total_sent == fsize && ack_waiting_list.size()) {
-                    goto RECEIVE;
-                }
-                // GOTO SEND_PACKET  // NOT SURE
-                // goto SEND_PACKET;
-                //
-            } else {
-                // GRAB ANOTHER PACKET
-                goto RECEIVE;
-                // GOTO RECEIVE BLOCKING CALL
-            }
-        } else {
-            // THINK
-            // // GRAB ANOTHER PACKET
+            // SEND PACKETS TILL THE WINDOW IS FULL AGAIN.
+            sendfromlast = 0;
+            goto SEND_PACKET;
+
+            //  if (ack_waiting_list.size() > 0) {
+            //      waiting_ack_no = get_min_element(ack_waiting_list);
+            //      int removed_index = erase_element(&ack_waiting_list, waiting_ack_no);
+            //      if (removed_index > ack_waiting_list.size()) {
+            //          // DELETION FAILED.
+            //          // perror("COULD NOT DELETE SEQUENCE NUMBER");
+            //          quit("COULD NOT DELETE SEQUENCE NUMBER");
+            //      } else {
+            //          std::cout << "ELEMENT REMOVED FROM --> " << removed_index << std::endl;
+            //          std::cout << "NOW WAITING ON --> " << waiting_ack_no << std::endl;
+            //      }
+            //      sendfromlast = 1;
+            //  } else {
+            //      // NOT WAITING FOR ANY.
+            //      isWaitingSet = 0;
+            //  }
+            //  if (total_sent == fsize && ack_waiting_list.size()) {
+            //      goto RECEIVE;
+            //  }
+            // GOTO SEND_PACKET  // NOT SURE
+            // goto SEND_PACKET;
+            //
+        } else if (l_seq_no == waiting_ack_no) {
+            // GRAB ANOTHER PACKET
+            // goto SEND_PACKET;
+            // GOTO RECEIVE BLOCKING CALL
         }
+        // } else {
+        // THINK
+        // // GRAB ANOTHER PACKET
+        // }
     }
 
     // SEND A BLANK PACKET TO INDICATE THE END OF FILE.
@@ -527,5 +530,24 @@ void print_list(std::list<unsigned int> &p_list) {
         it++;
     }
     std::cout << std::endl;
+}
+
+int remove_lower_than(std::list<unsigned int> *p_list, unsigned int p_element) {
+    std::cout << std::endl;
+    std::cout << "~~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
+    std::cout << "REMOVING LOWER THAN:" << p_element << std::endl;
+
+    int l_element_index = 0;
+    unsigned min_ele = get_min_element(*p_list);
+    while (min_ele != p_element) {
+        erase_element(p_list, min_ele);
+        min_ele = get_min_element(*p_list);
+    }
+    l_element_index = get_element_index(*p_list, p_element);
+    std::cout << "AFTER REMOVING :: INDEX OF " << p_element << ": " << l_element_index << std::endl;
+
+    std::cout << "~~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
+    std::cout << std::endl;
+    return l_element_index;
 }
 // -----------------------------------------------------------------------

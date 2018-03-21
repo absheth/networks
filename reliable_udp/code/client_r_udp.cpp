@@ -106,8 +106,8 @@ int main(int argc, char const *argv[]) {
     rqst_packet.ackno = 0;
     receive_window = 65535;
     number_to_char(rqst_packet.load, receive_window, rqst_packet.seq_num, rqst_packet.ackno, 2);
-    std::string http_rqst = "server_r_udp.cpp";
-    // std::string http_rqst = "1234.txt";
+    // std::string http_rqst = "server_r_udp.cpp";
+    std::string http_rqst = "1mb.txt";
     memcpy(rqst_packet.load + 12, http_rqst.c_str(), http_rqst.length());
     /*
      * DEBUG
@@ -227,9 +227,9 @@ int main(int argc, char const *argv[]) {
         int removed_index = erase_element(&ack_send_list, waiting_seq_no);
         if (removed_index > ack_send_list.size()) {
             // DELETION FAILED
-            std::cout << "Could not delete " << waiting_seq_no << std::endl;
+            std::cout << "NOT PRESENT IN LIST " << waiting_seq_no << std::endl;
 
-            perror("COULD NOT DELETE ");
+            perror("NOT PRESENT IN LIST");
         } else {
             std::cout << "waiting_seq_no --> " << waiting_seq_no << " deleted from "
                       << removed_index << std::endl;
@@ -242,6 +242,9 @@ int main(int argc, char const *argv[]) {
 
         if (get_element_index(ack_send_list, waiting_seq_no) != ack_send_list.size()) {
             goto REMOVE;
+        }
+        if(ack_send_list.size() == 0) {
+            goto SEND_ACK; 
         }
         // if(waiting_seq_no == total_received) {
         //     goto SEND_ACK;
@@ -268,7 +271,12 @@ int main(int argc, char const *argv[]) {
 
         send_pkt.load[0] = padding;
         send_pkt.load[1] = '1';
-        number_to_char(send_pkt.load, receive_window, waiting_seq_no, waiting_seq_no, 2);
+        unsigned int pack_ack = 0;
+
+        if(waiting_seq_no != 0) {
+            pack_ack = total_received - DATA_SIZE;
+        }
+        number_to_char(send_pkt.load, receive_window, waiting_seq_no, pack_ack, 2);
         if (sendto(socketFD, send_pkt.load, PACKET_SIZE, 0, (struct sockaddr *)&serveraddr,
                    serverlen) < 0) {
             std::free(rqst_packet.load);
@@ -276,21 +284,15 @@ int main(int argc, char const *argv[]) {
             return -1;
         }
 
-        waiting_seq_no = total_received;
-        ack_send_list.push_back(waiting_seq_no);
+        // waiting_seq_no = total_received;
+        // ack_send_list.push_back(waiting_seq_no);
         std::free(send_pkt.load);
+        
+        memset(receive_buffer, 0, PACKET_SIZE);
         if (padding == 'x') {
             break;
         }
         goto RECEIVE;
-        // std::strin
-        // g x(buffer);
-        // if (x == "**over**") {
-        //     break;
-        // }
-        // size += received;
-        // std::cout << buffer << '\n';
-        memset(receive_buffer, 0, sizeof PACKET_SIZE);
     }
     std::string final_data(main_data);
     std::free(main_data);
