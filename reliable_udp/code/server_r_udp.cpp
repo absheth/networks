@@ -1,3 +1,5 @@
+
+// START OF SERVER FILE 
 // Header file for input output functions
 #include <iostream>
 // #include <stdio.h>
@@ -245,7 +247,7 @@ MAIN:
             }
 
             std::cout << std::endl;
-            std::cout << "*** BEFORE SENDING ***" << std::endl;
+            std::cout << "######### BEFORE SENDING #########" << std::endl;
             std::cout << "snd_pkt.load[0] --> " << send_pkt.load[0] << std::endl;
             std::cout << "snd_pkt.load[1] --> " << send_pkt.load[1] << std::endl;
             std::cout << "receive_window --> " << receive_window << std::endl;
@@ -253,7 +255,7 @@ MAIN:
             std::cout << "ack field --> " << l_ack_no << std::endl;
             std::cout << "packet_size --> " << packetsize << std::endl;
             std::cout << "data_size --> " << data_size << std::endl;
-            std::cout << "*** BEFORE SENDING ***" << std::endl;
+            std::cout << "######### BEFORE SENDING #########" << std::endl;
             std::cout << std::endl;
             int sendto_value = sendto(connFD, send_pkt.load, packetsize, 0,
                                       (struct sockaddr *)&clientaddr, clientlen);
@@ -267,7 +269,7 @@ MAIN:
                 std::free(send_pkt.load);
             }
 
-            if (lst_received == 'x' && l_ack_flg == '0' && l_ack_no == waiting_ack_no) {
+            if (lst_received == 'x' && l_ack_no == fsize && l_ack_no == waiting_ack_no) {
                 std::cout << " -- Last packet from client ACKNOWLEDGED -- " << std::endl;
                 goto MAIN;
             }
@@ -285,29 +287,29 @@ MAIN:
             sendfromlast = 1;
             ack_waiting_list.push_back(total_sent);
             std::cout << std::endl;
-            std::cout << "##################" << std::endl;
-            std::cout << "SEND SIZE --> " << data_size << std::endl;
-            std::cout << "SENDING RECEIVE WINDOW --> " << receive_window << std::endl;
-            std::cout << "SENDING TOTAL SENT --> " << total_sent << std::endl;
-            std::cout << "S:: waiting_ack_no --> " << waiting_ack_no << std::endl;
-            std::cout << "LIST SIZE --> " << ack_waiting_list.size() << std::endl;
+            std::cout << "######### AFTER SENDING #########" << std::endl;
+            std::cout << "DATA SIZE SENT --> " << data_size << std::endl;
+            std::cout << "RECEIVE WINDOW SENT --> " << receive_window << std::endl;
+            std::cout << "TOTAL SENT --> " << total_sent << std::endl;
+            std::cout << "WAITING FOR ACK NO --> " << waiting_ack_no << std::endl;
+            std::cout << "ACK WAITING LIST SIZE --> " << ack_waiting_list.size() << std::endl;
             print_list(ack_waiting_list);
-            std::cout << "##################" << std::endl;
+            std::cout << "######### AFTER SENDING #########" << std::endl;
             std::cout << std::endl;
         }
         // TIMER GOES SOMEWHERE HERE
         // char receive_buffer[PACKET_SIZE];
         int received_bytes;
     RECEIVE:
-        std::cout << std::endl;
-        std::cout << "---------------------------" << std::endl;
+        //std::cout << std::endl;
+        // std::cout << "---------------------------" << std::endl;
         // unsigned int sleep_time = 50;
         // usleep(sleep_time);
-        unsigned int sleep_time = 2;
-        std::cout << "SLEEPING FOR " << sleep_time << " MILLISECONDS " << std::endl;
-        sleep(sleep_time);
-        std::cout << "---------------------------" << std::endl;
-        std::cout << std::endl;
+        // unsigned int sleep_time = 2;
+        // std::cout << "SLEEPING FOR " << sleep_time << std::endl;
+        // sleep(sleep_time);
+        // std::cout << "---------------------------" << std::endl;
+        //std::cout << std::endl;
         memset(receive_buffer, 0, PACKET_SIZE);
         received_bytes = recvfrom(connFD, receive_buffer, PACKET_SIZE, 0,
                                   (struct sockaddr *)&clientaddr, (socklen_t *)&clientlen);
@@ -334,7 +336,7 @@ MAIN:
         std::cout << "************************************************************************"
                   << std::endl;
         std::cout << std::endl;
-        if (lst_received == 'x' && l_ack_flg == '0') {
+        if (lst_received == 'x' && l_ack_no == total_sent) {
             goto TILL;
         }
         // if first
@@ -633,4 +635,5 @@ int remove_till(std::list<unsigned int> *p_list, unsigned int p_element) {
     return l_element_index;
 }
 // -----------------------------------------------------------------------
-// -----------------------------------------------------------------------
+
+// END OF SERVER FILE

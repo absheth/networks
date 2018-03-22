@@ -106,9 +106,9 @@ int main(int argc, char const *argv[]) {
     rqst_packet.ackno = 0;
     receive_window = 65535;
     number_to_char(rqst_packet.load, receive_window, rqst_packet.seq_num, rqst_packet.ackno, 2);
-    // std::string http_rqst = "server_r_udp.cpp";
-    std::string http_rqst = "1mb.txt";
-    memcpy(rqst_packet.load + 12, http_rqst.c_str(), http_rqst.length());
+    // std::string filename = "server_r_udp.cpp";
+    std::string filename = "1mb.txt";
+    memcpy(rqst_packet.load + 12, filename.c_str(), filename.length());
     /*
      * DEBUG
     unsigned short l_rwin = char_to_short(rqst_packet.load, 2);
@@ -142,21 +142,54 @@ int main(int argc, char const *argv[]) {
     char l_ack_flg = '1';
     unsigned int waiting_seq_no = 0;
     int already_received = 0;
+    int waiting_ack_count = 0;
     // int window_count = 0;
     // int isWaitingSet = 0;
     // int sendfromlast = 0;  // 0 means from l_seq_no  || 1 means from total_sent
-    // ack_send_list.push_back(l_seq_no);
     while (1) {
+    MAIN:
+        if (padding == 'x' && l_ack_no == waiting_seq_no ) {
+            break;
+        }
     RECEIVE:
         while (ack_send_list.size() < window_size) {
             memset(receive_buffer, 0, PACKET_SIZE);
-            // TIMEOUT ON RECEIVE
-            // IF TIMEOUT. Go to SEND ACK
-            if ((received = recvfrom(socketFD, receive_buffer, PACKET_SIZE, 0,
-                                     (struct sockaddr *)&serveraddr, (socklen_t *)&serverlen)) ==
-                FAILURE) {
-                perror("receive error");
-                // exit(-1);
+
+            // TIMER
+            int rval;
+            fd_set fds;
+            struct timeval tv;
+            tv.tv_sec = 0;
+            tv.tv_usec = 500000 ;
+            std::cout << "TIMER TIMEOUT ::  secs --> " << tv.tv_sec << " | usec --> " << tv.tv_usec
+                      << std::endl;
+            std::cout << std::endl;
+            
+            FD_ZERO(&fds);
+            FD_SET(socketFD, &fds);
+            rval = select(socketFD + 1, &fds, NULL, NULL, &tv);
+            std::cout << "RVAL --> " << rval << std::endl;
+
+            if (rval < 0) {
+                perror("~~~~~ ERROR WHILE SELECTING ~~~~~");
+
+            } else if (rval == 0) {
+                // TIMEOUT
+                std::cout << std::endl;
+                std::cout << "***** TIMEOUT *****" << std::endl;
+                std::cout << "JUMPING TO --> SEND_ACK " << std::endl;
+                std::cout << "***** TIMEOUT *****" << std::endl;
+                std::cout << std::endl;
+                
+                goto SEND_ACK;
+            } else {
+                // Data available to read. READ IT.
+                if ((received = recvfrom(socketFD, receive_buffer, PACKET_SIZE, 0,
+                                         (struct sockaddr *)&serveraddr,
+                                         (socklen_t *)&serverlen)) == FAILURE) {
+                    perror("receive error");
+                    // exit(-1);
+                }
             }
             std::cout << std::endl;
             std::cout << "************************************************************************"
@@ -169,6 +202,11 @@ int main(int argc, char const *argv[]) {
             std::cout << "RECEIVED ACKNOWLEDGEMENT --> " << l_ack_no << std::endl;
             std::cout << "R:: waiting_seq_no --> " << waiting_seq_no << std::endl;
             std::cout << "R:: TOTAL RECEIVED --> " << total_received << std::endl;
+            waiting_ack_count = receive_buffer[1] - '0';
+            std::cout << "WAITING FOR ACK ON SERVER SIDE: " << waiting_ack_count << std::endl;
+            if(padding == 'x' && l_ack_no == waiting_seq_no ) {
+                goto MAIN;
+            }
             if (receive_buffer[0] == 'x') {
                 padding = 'x';
             }
@@ -177,84 +215,96 @@ int main(int argc, char const *argv[]) {
             std::cout << std::endl;
             if (get_element_index(ack_send_list, l_seq_no) == ack_send_list.size()) {
                 // RECEIVING FOR THE FIRST TIME or AGAIN. Add to the list of ACKS to be sent.
+                std::cout << "INSERTING IN THE LIST :: l_seq_no --> " << l_seq_no << std::endl;
+                std::cout << std::endl;
+                 
                 ack_send_list.push_back(l_seq_no);
             } else {
                 // RECEIVED. READ NEXT PACKET.
                 // goto RECEIVE;
-                std::cout << "ALREADT RECEIVED :: packet with l_seq_no --> " << l_seq_no << std::endl;
+                std::cout << "ALREADT RECEIVED :: packet with l_seq_no --> " << l_seq_no
+                          << std::endl;
                 std::cout << "Continuing to get another packet.. " << std::endl;
-                
+
                 continue;
             }
             int received_data_size = received - HEADER_SIZE;
-
-            //  if (l_seq_no == waiting_seq_no) {
-            //      if (get_element_index(ack_send_list, l_seq_no) == ack_send_list.size()) {
-            //          goto RECEIVE;
-            //          // ack_send_list.push_back(l_seq_no);
-            //      } else {
-            //          int removed_index = erase_element(&ack_send_list, waiting_seq_no);
-            //          if (removed_index > ack_send_list.size()) {
-            //              // DELETION FAILED.
-            //              // perror("COULD NOT DELETE SEQUENCE NUMBER");
-            //              perror("COULD NOT DELETE SEQUENCE NUMBER");
-            //          } else {
-            //              std::cout << "ELEMENT REMOVED FROM --> " << removed_index << std::endl;
-            //              // std::cout << "NOW WAITING ON --> " << waiting_seq_no << std::endl;
-            //          }
-            //      }
-
+            
+            std::cout << std::endl;
+            std::cout << std::endl;
+            std::cout << "=====================================================" << std::endl;
+            std::cout << "OLD TOTAL RECEIVED --> " << total_received << std::endl;
+            std::cout << "RECEIVED DATA SIZE --> " << received_data_size << std::endl;
+            
             memcpy(main_data + total_received, receive_buffer + 12, received_data_size);
-
             total_received += received_data_size;
+            std::cout << "NEW TOTAL RECEIVED --> " << total_received << std::endl;
+            
+            std::cout << "=====================================================" << std::endl;
+            std::cout << std::endl;
+            std::cout << std::endl;
+            
+
             if (l_seq_no == waiting_seq_no) {
+                std::cout << "l_seq_no == waiting_seq_no -->  " << l_seq_no
+                          << " == " << waiting_seq_no << std::endl;
+                std::cout << "REMOVE IT FROM THE LIST" << std::endl;
+                std::cout << "JUMPING TO --> REMOVE " << std::endl;
+
                 goto REMOVE;
             }
-            // memcpy(main_data + total_received, receive_buffer + 12, received_data_size);
-            // std::cout << std::endl;
-            // std::cout << "----------------" << std::endl;
-            // std::cout << "NEW:: waiting_seq_no --> " << waiting_seq_no << std::endl;
-            // std::cout << "NEW:: total_received --> " << total_received << std::endl;
-            // std::cout << "----------------" << std::endl;
-            // std::cout << std::endl;
-            //  }
         }
     REMOVE:
-        // We have received waiting_seq_no. Remove it from list and set it to min of the list.
-        int removed_index = erase_element(&ack_send_list, waiting_seq_no);
-        if (removed_index > ack_send_list.size()) {
-            // DELETION FAILED
-            std::cout << "NOT PRESENT IN LIST " << waiting_seq_no << std::endl;
 
-            perror("NOT PRESENT IN LIST");
-        } else {
-            std::cout << "waiting_seq_no --> " << waiting_seq_no << " deleted from "
-                      << removed_index << std::endl;
-            if (padding != 'x') {
-                waiting_seq_no += DATA_SIZE;
+        if (l_seq_no == waiting_seq_no) {
+            int removed_index = erase_element(&ack_send_list, waiting_seq_no);
+            if (removed_index > ack_send_list.size()) {
+                // DELETION FAILED
+                std::cout << "NOT PRESENT IN LIST " << waiting_seq_no << std::endl;
+                perror("NOT PRESENT IN LIST");
             } else {
-                waiting_seq_no = total_received;  // NOT SURE;
+                std::cout << "waiting_seq_no --> " << waiting_seq_no
+                          << " deleted from the list on index --> " << removed_index << std::endl;
+                if (padding != 'x') {
+                    // IF LAST PACKET NOT ALREADY RECEIVED
+                    waiting_seq_no += DATA_SIZE;
+                } else {
+                    // IF LAST PACKET ALREADY RECEIVED
+                    waiting_seq_no = total_received - received;  // NOT SURE;
+                }
             }
-        }
 
-        if (get_element_index(ack_send_list, waiting_seq_no) != ack_send_list.size()) {
-            goto REMOVE;
-        }
-        if(ack_send_list.size() == 0) {
-            goto SEND_ACK; 
-        }
-        // if(waiting_seq_no == total_received) {
-        //     goto SEND_ACK;
-        // }
-        goto RECEIVE;
+            if (get_element_index(ack_send_list, waiting_seq_no) != ack_send_list.size()) {
+                std::cout << "waiting_seq_no --> " << waiting_seq_no
+                          << "  :: ALREADY PRESENT IN THE LIST." << std::endl;
+                std::cout << "JUMPING TO --> REMOVE" << std::endl;
+                std::cout << std::endl;
+                
+                goto REMOVE;
+            }
+            /*
+            if (ack_send_list.size() == 0) {
 
+                std::cout << "JUMPING TO --> REMOVE" << std::endl;
+                goto SEND_ACK;
+            }
+            */
+
+            std::cout << "JUMPING TO --> RECEIVE :: END OF REMOVE" << std::endl;
+            std::cout << std::endl;
+             
+            goto RECEIVE;
+        }
     SEND_ACK:
-        unsigned int sleep_time = 50;
-        std::cout << "---------------------------" << std::endl;
-        std::cout << "SLEEPING FOR " << sleep_time << " MILLISECONDS " << std::endl;
+        // std::cout << "---------------------------" << std::endl;
+        // unsigned int sleep_time = 50;
         // usleep(sleep_time);
-        std::cout << "---------------------------" << std::endl;
-        std::cout << std::endl;
+        // unsigned int sleep_time = 2;
+        // std::cout << "SLEEPING FOR " << sleep_time << std::endl;
+        // sleep(sleep_time);
+        // std::cout << "---------------------------" << std::endl;
+        // std::cout << std::endl;
+        std::cout << "##################" << std::endl;
         std::cout << "SENDING ACK" << std::endl;
         std::cout << "SENDING RECEIVE WINDOW --> " << receive_window << std::endl;
         std::cout << "SENDING TOTAL RECEIVED --> " << total_received << std::endl;
@@ -270,23 +320,32 @@ int main(int argc, char const *argv[]) {
         send_pkt.load[1] = '1';
         unsigned int pack_ack = 0;
 
-        if(waiting_seq_no != 0) {
-            pack_ack = total_received - DATA_SIZE;
+        if (waiting_seq_no != 0) {
+            pack_ack = total_received ;
         }
+
+        if(padding == 'x' && ack_send_list.size() == 0) {
+            // pack_ack = l_ack_no;
+            pack_ack = total_received;
+            waiting_seq_no = total_received;
+        }
+        
         number_to_char(send_pkt.load, receive_window, waiting_seq_no, pack_ack, 2);
-        if (sendto(socketFD, send_pkt.load, PACKET_SIZE, 0, (struct sockaddr *)&serveraddr,
-                   serverlen) < 0) {
+        int sendto_value = sendto(socketFD, send_pkt.load, PACKET_SIZE, 0,
+                                  (struct sockaddr *)&serveraddr, serverlen);
+
+        std::cout << "SENDTO_VALUE --> " << sendto_value << std::endl;
+
+        if (sendto_value < 0) {
             std::free(rqst_packet.load);
             perror("sending error");
             return -1;
         }
 
-        // waiting_seq_no = total_received;
-        // ack_send_list.push_back(waiting_seq_no);
+        // RESPONSE SENT. Free the load.
         std::free(send_pkt.load);
-        
         memset(receive_buffer, 0, PACKET_SIZE);
-        if (padding == 'x') {
+        if (padding == 'x' && waiting_ack_count == 0) {
             break;
         }
         goto RECEIVE;
