@@ -55,6 +55,7 @@ unsigned int get_min_element(std::list<unsigned int> &p_list);
 unsigned int get_max_element(std::list<unsigned int> &p_list);
 int erase_element(std::list<unsigned int> *p_list, unsigned int p_element);
 int remove_lower_than(std::list<unsigned int> *p_list, unsigned int p_element);
+int remove_till(std::list<unsigned int> *p_list, unsigned int p_element);
 void print_list(std::list<unsigned int> &p_list);
 
 std::list<unsigned int> ack_waiting_list;
@@ -88,7 +89,7 @@ int main(int argc, char const *argv[]) {
     working_directory = getenv("PWD");
     std::cout << "working_directory --> " << working_directory << '\n';
     // window_size = atoi(argv[1]);
-    window_size = 3;
+    window_size = 9;
     //--------------------------------------------
     if (start_server() != 0) {
         std::cout << "Server did not start." << '\n';
@@ -108,7 +109,7 @@ int main(int argc, char const *argv[]) {
 
 // -----------------------------------------------------------------------
 void service_request(int connFD) {
-    int sum = 0;
+    int request_error = 0;
     std::cout << '\n';
     std::cout << "SERVING NOW.." << '\n';
     char receive_buffer[PACKET_SIZE];
@@ -120,42 +121,63 @@ void service_request(int connFD) {
     pkt received_pkt;
     init_packet(&received_pkt);
     parse_packet(receive_buffer, &received_pkt);
-    //  int seq_num = char_to_int(receive_buffer, 4);
-    //  std::cout << "seq_num --> " << received_pkt.seq_num << std::endl;
-    //  std::cout << "Request --> " << received_pkt.load << std::endl;
-    //  std::cout << "Request length --> " << strlen(received_pkt.load) << std::endl;
-    //  std::cout << "ackno --> " << received_pkt.ackno << std::endl;
-    //  std::cout << "receive_window--> " << receive_window << std::endl;
-    //  std::cout << "ackflg --> " << received_pkt.ack_flg << std::endl;
-    // --------------------
-    FILE *f = fopen(received_pkt.load, "rb");
-    // FILE *f = fopen("1mb.txt", "rb");
-    fseek(f, 0, SEEK_END);
-    long fsize = ftell(f);
-    fseek(f, 0, SEEK_SET);
+    int seq_num = char_to_int(receive_buffer, 4);
+    if (seq_num != 0) {
+        request_error = 1;
+        goto END;
+    }
 
-    char *file = (char *)malloc(fsize + 1);
-    fread(file, fsize, 1, f);
-    fclose(f);
-    std::free(received_pkt.load);  // FREE MEMORY
-    // -------------------_
-    file[fsize] = 0;
-    // std::cout << "FILE--> " << file << std::endl;
-    std::cout << "FILE SIZE --> " << fsize << std::endl;
-    std::cout << "WINDOW SIZE --> " << window_size << std::endl;
+    unsigned int l_seq_no;
+    unsigned int l_ack_no;
+    char l_ack_flg;
+    unsigned int waiting_ack_no;
+    int window_count;
+    int isWaitingSet;
+    int sendfromlast;  // 0 means from l_seq_no  || 1 means from total_sent
+    int data_size;
+    int final_sent;
+    char lst_received;
+    long fsize;
+    char *file;
+    FILE *f;
+    if (!request_error) {
+        //  std::cout << "seq_num --> " << received_pkt.seq_num << std::endl;
+        //  std::cout << "Request --> " << received_pkt.load << std::endl;
+        //  std::cout << "Request length --> " << strlen(received_pkt.load) << std::endl;
+        //  std::cout << "ackno --> " << received_pkt.ackno << std::endl;
+        //  std::cout << "receive_window--> " << receive_window << std::endl;
+        //  std::cout << "ackflg --> " << received_pkt.ack_flg << std::endl;
+        // --------------------
+        f = fopen(received_pkt.load, "rb");
+        // FILE *f = fopen("1mb.txt", "rb");
+        fseek(f, 0, SEEK_END);
+        fsize = ftell(f);
+        fseek(f, 0, SEEK_SET);
 
-    // unsigned int l_seq_no = received_pkt.seq_num;
-    // unsigned int l_ack_no = received_pkt.ackno;
+        file = (char *)malloc(fsize + 1);
+        fread(file, fsize, 1, f);
+        fclose(f);
+        std::free(received_pkt.load);  // FREE MEMORY
+        // -------------------_
+        file[fsize] = 0;
+        // std::cout << "FILE--> " << file << std::endl;
+        std::cout << "FILE SIZE --> " << fsize << std::endl;
+        std::cout << "WINDOW SIZE --> " << window_size << std::endl;
 
-    unsigned int l_seq_no = 0;
-    unsigned int l_ack_no = 0;
-    char l_ack_flg = '0';
-    unsigned int waiting_ack_no = 0;
-    int window_count = 0;
-    int isWaitingSet = 0;
-    int sendfromlast = 0;  // 0 means from l_seq_no  || 1 means from total_sent
-    int data_size = 0;
-    int final_sent = 0;
+        // unsigned int l_seq_no = received_pkt.seq_num;
+        // unsigned int l_ack_no = received_pkt.ackno;
+        l_seq_no = 0;
+        l_ack_no = 0;
+        l_ack_flg = '0';
+        waiting_ack_no = 0;
+        window_count = 0;
+        isWaitingSet = 0;
+        sendfromlast = 0;  // 0 means from l_seq_no  || 1 means from total_sent
+        data_size = 0;
+        final_sent = 0;
+        lst_received = '0';
+    }
+MAIN:
     while (total_sent <= fsize) {
         // First, send packets equal to the window size
         if (total_sent == fsize) {
@@ -163,7 +185,7 @@ void service_request(int connFD) {
             std::cout << "****ALL DATA SENT****" << std::endl;
             // std::cout << "LIST SIZE --> " << ack_waiting_list.size() << std::endl;
 
-            if (final_sent) {
+            if (final_sent && padding != 'x') {
                 goto RECEIVE;
             } else {
                 std::cout << "****************** BREAKING ****************" << std::endl;
@@ -175,6 +197,9 @@ void service_request(int connFD) {
     SEND_PACKET:
         // SEND_PACKET
         while (ack_waiting_list.size() < window_size) {
+            if (padding == 'x' and ack_waiting_list.size() != 0) {
+                goto RECEIVE;
+            }
             pkt send_pkt;
             init_packet(&send_pkt);
             // send_pkt.seq_num = total_sent;
@@ -207,14 +232,34 @@ void service_request(int connFD) {
             int packetsize = PACKET_SIZE;
             if (final_sent) {
                 packetsize = data_size + HEADER_SIZE;
-                send_pkt.load[0] = 'x';
+                padding = 'x';
             }
 
+            send_pkt.load[0] = padding;
+            send_pkt.load[1] = char('0' + ack_waiting_list.size());
             // number_to_char(send_pkt.load, receive_window, total_sent, current_ackno, 2);
             number_to_char(send_pkt.load, receive_window, send_index, l_ack_no, 2);
             memcpy(send_pkt.load + 12, file + send_index, data_size);
-            if (sendto(connFD, send_pkt.load, packetsize, 0, (struct sockaddr *)&clientaddr,
-                       clientlen) < 0) {
+            if (data_size == 0) {
+                packetsize = PACKET_SIZE;
+            }
+
+            std::cout << std::endl;
+            std::cout << "*** BEFORE SENDING ***" << std::endl;
+            std::cout << "snd_pkt.load[0] --> " << send_pkt.load[0] << std::endl;
+            std::cout << "snd_pkt.load[1] --> " << send_pkt.load[1] << std::endl;
+            std::cout << "receive_window --> " << receive_window << std::endl;
+            std::cout << "seq_num field --> " << send_index << std::endl;
+            std::cout << "ack field --> " << l_ack_no << std::endl;
+            std::cout << "packet_size --> " << packetsize << std::endl;
+            std::cout << "data_size --> " << data_size << std::endl;
+            std::cout << "*** BEFORE SENDING ***" << std::endl;
+            std::cout << std::endl;
+            int sendto_value = sendto(connFD, send_pkt.load, packetsize, 0,
+                                      (struct sockaddr *)&clientaddr, clientlen);
+            std::cout << "SEND_TO VALUE --> " << sendto_value << std::endl;
+
+            if (sendto_value < 0) {
                 std::free(send_pkt.load);
                 perror("sending error");
                 goto SEND_PACKET;
@@ -222,6 +267,10 @@ void service_request(int connFD) {
                 std::free(send_pkt.load);
             }
 
+            if (lst_received == 'x' && l_ack_flg == '0' && l_ack_no == waiting_ack_no) {
+                std::cout << " -- Last packet from client ACKNOWLEDGED -- " << std::endl;
+                goto MAIN;
+            }
             // ********************************************
 
             // ********************************************
@@ -250,11 +299,13 @@ void service_request(int connFD) {
         // char receive_buffer[PACKET_SIZE];
         int received_bytes;
     RECEIVE:
-        unsigned int sleep_time = 50;
         std::cout << std::endl;
         std::cout << "---------------------------" << std::endl;
-        std::cout << "SLEEPING FOR " << sleep_time << " MILLISECONDS " << std::endl;
+        // unsigned int sleep_time = 50;
         // usleep(sleep_time);
+        unsigned int sleep_time = 2;
+        std::cout << "SLEEPING FOR " << sleep_time << " MILLISECONDS " << std::endl;
+        sleep(sleep_time);
         std::cout << "---------------------------" << std::endl;
         std::cout << std::endl;
         memset(receive_buffer, 0, PACKET_SIZE);
@@ -266,7 +317,7 @@ void service_request(int connFD) {
         std::cout << "FILESIZE --> " << fsize << std::endl;
 
         std::cout << "RECEIVED BYTES --> " << received_bytes << std::endl;
-        char lst_received = receive_buffer[0];
+        lst_received = receive_buffer[0];
         std::cout << "PADDING --> " << lst_received << std::endl;
         l_ack_flg = receive_buffer[1];
         std::cout << "RECEIVED ACK_FLG --> " << l_ack_flg << std::endl;
@@ -283,8 +334,12 @@ void service_request(int connFD) {
         std::cout << "************************************************************************"
                   << std::endl;
         std::cout << std::endl;
-        if (lst_received == 'x') {
-            break;
+        if (lst_received == 'x' && l_ack_flg == '0') {
+            goto TILL;
+        }
+        // if first
+        if (lst_received == '0') {
+            goto SEND_PACKET;
         }
         // GOTO RECEIVE BLOCKING CALL : recvfrom();
 
@@ -296,10 +351,13 @@ void service_request(int connFD) {
         if (l_ack_no > waiting_ack_no) {
             // CLIENT HAS RECEIVED ALL THE DATA BELOW l_ack_no;
             // set waiting_ack_no to l_ack_no
-            waiting_ack_no = l_ack_no;
+            //  waiting_ack_no = l_ack_no;
             // REMOVE ALL THE ACK BELOW ack_waiting_list.
-            int waiting_ack_index = remove_lower_than(&ack_waiting_list, waiting_ack_no);
-            std::cout << "ALL THE ELEMENTS BELOW " << waiting_ack_no << "REMOVED." << std::endl;
+        TILL:
+
+            waiting_ack_no = l_ack_no;
+            int waiting_ack_index = remove_till(&ack_waiting_list, waiting_ack_no);
+            std::cout << "ALL THE ELEMENTS BELOW " << waiting_ack_no << " REMOVED." << std::endl;
             std::cout << "ACK WAITING LIST: " << std::endl;
             print_list(ack_waiting_list);
 
@@ -341,11 +399,14 @@ void service_request(int connFD) {
     }
 
     // SEND A BLANK PACKET TO INDICATE THE END OF FILE.
+END:
     total_sent = 0;
     waiting_ack_no = 0;
     padding = '-';
     ack_waiting_list.clear();
-    std::free(file);
+    if (!request_error) {
+        std::free(file);
+    }
 }
 
 // -----------------------------------------------------------------------
@@ -421,7 +482,7 @@ unsigned int char_to_int(char *p_charstream, int p_offset) {
 }
 /* Converts char array to unsigned hort */
 unsigned short char_to_short(char *p_charstream, int p_offset) {
-    return ((unsigned char)p_charstream[p_offset + 0] << 24) |
+    return ((unsigned char)p_charstream[p_offset + 0] << 8) |
            (unsigned char)p_charstream[p_offset + 1];
 }
 
@@ -550,4 +611,26 @@ int remove_lower_than(std::list<unsigned int> *p_list, unsigned int p_element) {
     std::cout << std::endl;
     return l_element_index;
 }
+
+int remove_till(std::list<unsigned int> *p_list, unsigned int p_element) {
+    std::cout << std::endl;
+    std::cout << "~~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
+    std::cout << "REMOVING TILL:" << p_element << std::endl;
+    int l_element_index = get_element_index(*p_list, p_element);
+    std::list<unsigned int>::iterator it = (*p_list).begin();
+    int count = 0;
+    while (count <= l_element_index) {
+        (*p_list).erase(it);
+        it++;
+        count++;
+    }
+
+    // std::cout << "AFTER REMOVING :: INDEX OF " << p_element << ": " << l_element_index <<
+    // std::endl;
+
+    std::cout << "~~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
+    std::cout << std::endl;
+    return l_element_index;
+}
+// -----------------------------------------------------------------------
 // -----------------------------------------------------------------------

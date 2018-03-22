@@ -132,7 +132,7 @@ int main(int argc, char const *argv[]) {
     // return 0;
     // int size = 0;
     std::cout << "------------ RESPONSE START ------------" << '\n';
-    window_size = 3;
+    window_size = 9;
     std::cout << "WINDOW SIZE --> " << window_size << std::endl;
 
     main_data = (char *)calloc(MAXBUFFERSIZE, sizeof(char));
@@ -158,12 +158,6 @@ int main(int argc, char const *argv[]) {
                 perror("receive error");
                 // exit(-1);
             }
-            /*  // UNCOMMENT
-            if (received == 0) {
-                memset(receive_buffer, 0, sizeof PACKET_SIZE);
-                break;
-            }
-            */
             std::cout << std::endl;
             std::cout << "************************************************************************"
                       << std::endl;
@@ -187,6 +181,9 @@ int main(int argc, char const *argv[]) {
             } else {
                 // RECEIVED. READ NEXT PACKET.
                 // goto RECEIVE;
+                std::cout << "ALREADT RECEIVED :: packet with l_seq_no --> " << l_seq_no << std::endl;
+                std::cout << "Continuing to get another packet.. " << std::endl;
+                
                 continue;
             }
             int received_data_size = received - HEADER_SIZE;
