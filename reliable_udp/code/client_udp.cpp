@@ -110,15 +110,16 @@ int main(int argc, char const *argv[]) {
     char packet_padding = '-';
     int last_pack_size = 0;
     long long total_received = 0;
-    char packet_ack_flg = 'p';
+    char packet_ack_flg = 'a';
     int write_result = SUCCESS;
     // NOT_TO_USE // DECIDE
     unsigned int waiting_seq_no = 0;
     int already_received = 0;
     int waiting_ack_count = 0;
-
+    char* data;
     // -----------------------------
     std::string filename = "server_r_udp.cpp";
+    // std::string filename = "1mb.txt";
     memset(file_request, 0, sizeof(file_request));
     file_request[0] = '-';
     file_request[1] = packet_ack_flg;
@@ -138,18 +139,18 @@ int main(int argc, char const *argv[]) {
         return -1;
     }
     memset(file_request, 0, sizeof(file_request));
-    
+
     // -----------------------------
     std::cout << "------------ RESPONSE START ------------" << '\n';
     window_size = 9;
     std::cout << "WINDOW SIZE --> " << window_size << std::endl;
 
     while (1) {
-        
         memset(receive_buffer, 0, PACKET_SIZE);
         bytes_received = recvfrom(socketFD, receive_buffer, PACKET_SIZE, 0,
                                   (struct sockaddr *)&serveraddr, (socklen_t *)&serverlen);
-
+         // std::cout << "RECEIVE BUFFER --> " << receive_buffer+12 << std::endl;
+        
         if (bytes_received < 0) {
             std::cout << std::endl;
             std::cout << "##############" << std::endl;
@@ -164,73 +165,91 @@ int main(int argc, char const *argv[]) {
         receive_window = char_to_short(receive_buffer, 2);
         packet_seq_no = char_to_int(receive_buffer, 4);
         packet_ack_no = char_to_int(receive_buffer, 8);
-        memset(receive_buffer, 0, PACKET_SIZE);
+        // memset(receive_buffer, 0, PACKET_SIZE);
         std::cout << std::endl;
         std::cout << "************************************************************************"
                   << std::endl;
-        
+
         std::cout << "RECEIVED :: received_bytes --> " << bytes_received << std::endl;
         std::cout << "RECEIVED :: packet_padding --> " << packet_padding << std::endl;
         std::cout << "RECEIVED :: packet_ack_flg --> " << packet_ack_flg << std::endl;
         std::cout << "RECEIVED :: receive_window --> " << receive_window << std::endl;
         std::cout << "RECEIVED :: packet_seq_no  --> " << packet_seq_no << std::endl;
         std::cout << "RECEIVED :: packet_ack_no  --> " << packet_ack_no << std::endl;
-        
+
         std::cout << "************************************************************************"
                   << std::endl;
         std::cout << std::endl;
 
-        if(client_waiting_on == 0 && packet_seq_no != 0) {
-            
+        if (client_waiting_on == 0 && packet_seq_no != 0) {
             std::cout << std::endl;
             std::cout << "FIRST PACKET NOT RECEIVED" << std::endl;
             std::cout << "DROPPING PACKET --> " << packet_seq_no << std::endl;
-            std::cout << "WAITING FOR THE FIRST PACKET WITH SEQUENCE --> " << client_waiting_on << std::endl;
-            
+            std::cout << "WAITING FOR THE FIRST PACKET WITH SEQUENCE --> " << client_waiting_on
+                      << std::endl;
+
             packet_drop_count++;
             std::cout << std::endl;
             continue;
         } else if (client_waiting_on == packet_seq_no) {
-            
             std::cout << std::endl;
             std::cout << "RECEIVED WAITING PACKET --> " << client_waiting_on << std::endl;
             // WRITE TO FILE AND SEND ACK.
-            int write_result =  write_data_to_file(receive_buffer, bytes_received-HEADER_SIZE, packet_seq_no);
-            if(write_result < 0) {
+            // data = (char *)calloc((bytes_received-HEADER_SIZE), sizeof(char));
+            // memset(data, 0, (bytes_received-HEADER_SIZE));
+            // memcpy(data, receive_buffer+HEADER_SIZE, bytes_received-HEADER_SIZE);
+            // std::cout << data << std::endl;
+            // std::free(data);
+            
+            int write_result =
+                write_data_to_file(receive_buffer, bytes_received - HEADER_SIZE, packet_seq_no);
+            if (write_result < 0) {
                 std::cout << "TEMPORARY :: EXITING THE PROGRAM" << std::endl;
                 exit(EXIT_FAILURE);
             }
-            total_packets_received++;
-            client_waiting_on = total_packets_received;
-        } else {
+            if (packet_ack_flg != 'x') {
+                packet_ack_flg = 'a';
+            }
+            client_waiting_on = packet_seq_no+1;
             
+            total_packets_received++;
+            // exit(0);
+        } else {
             std::cout << std::endl;
             std::cout << "PACKET OUT OF ORDER --> " << packet_seq_no << std::endl;
             std::cout << "DROPPING THE PACKET --> " << packet_seq_no << std::endl;
+            total_packets_received++;
             packet_drop_count++;
         }
 
-        char* send_ack_packet = (char *)calloc(PACKET_SIZE, sizeof(char));
-        memset(send_ack_packet, 0, PACKET_SIZE); 
+        char *send_ack_packet = (char *)calloc(PACKET_SIZE, sizeof(char));
+        memset(send_ack_packet, 0, PACKET_SIZE);
         send_ack_packet[0] = packet_padding;
-        send_ack_packet[1] = 'a';
+        send_ack_packet[1] = packet_ack_flg;
         number_to_char(send_ack_packet, receive_window, client_waiting_on, client_waiting_on, 2);
-        int ack_sendto_value = sendto(socketFD,send_ack_packet, PACKET_SIZE, 0,
-                                  (struct sockaddr *)&serveraddr, serverlen);
+        int ack_sendto_value = sendto(socketFD, send_ack_packet, PACKET_SIZE, 0,
+                                      (struct sockaddr *)&serveraddr, serverlen);
         std::cout << std::endl;
-        std::cout << "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" << std::endl;
-        std::cout << "AFTER SENDING :: ack_sendto_value --> " << ack_sendto_value  << std::endl;
-        std::cout << "AFTER SENDING :: padding          --> " << send_ack_packet[0]<< std::endl;
-        std::cout << "AFTER SENDING :: ack flg          --> " << send_ack_packet[1]<<  std::endl;
-        std::cout << "AFTER SENDING :: receive_window   --> " << receive_window    << std::endl;
+        std::cout << "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+                  << std::endl;
+        std::cout << "AFTER SENDING :: ack_sendto_value --> " << ack_sendto_value << std::endl;
+        std::cout << "AFTER SENDING :: padding          --> " << send_ack_packet[0] << std::endl;
+        std::cout << "AFTER SENDING :: ack flg          --> " << send_ack_packet[1] << std::endl;
+        std::cout << "AFTER SENDING :: receive_window   --> " << receive_window << std::endl;
         std::cout << "AFTER SENDING :: sequence number  --> " << client_waiting_on << std::endl;
-        std::cout << "AFTER SENDING :: ack number       --> " << client_waiting_on << std::endl; 
-        std::cout << "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" << std::endl;
+        std::cout << "AFTER SENDING :: ack number       --> " << client_waiting_on << std::endl;
+        std::cout << "AFTER SENDING :: client_waiting_on--> " << client_waiting_on << std::endl;
+        std::cout << "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+                  << std::endl;
         std::cout << std::endl;
 
         // FREE_MEMORY
         std::free(send_ack_packet);
-         
+        if (packet_ack_flg == 'x') {
+            last_pack_size = bytes_received - HEADER_SIZE;
+            std::cout << "LAST PACK :: size --> " << last_pack_size << std::endl;
+            break;
+        }
     }
     close(socketFD);
     std::cout << "------------ RESPONSE END ------------" << '\n';
@@ -239,14 +258,14 @@ int main(int argc, char const *argv[]) {
     std::cout << "Elapsed time: " << elapsed.count() << " s\n";
 
     // FINAL_COMPUTATION
-    total_received = (total_packets_received * DATA_SIZE) + last_pack_size;
+    total_received = ((client_waiting_on - 1) * DATA_SIZE) + last_pack_size;
     std::cout << std::endl;
     std::cout << std::endl;
     std::cout << "************ FINAL STATISTICS  ************ " << std::endl;
     std::cout << "Total bytes received: " << total_received << std::endl;
     std::cout << "Total packets received: " << total_packets_received << std::endl;
     std::cout << "Total packets dropped: " << packet_drop_count << std::endl;
-     
+
     std::cout << "************ FINAL STATISTICS  ************ " << std::endl;
     std::cout << std::endl;
     std::cout << std::endl;
@@ -334,9 +353,13 @@ int write_data_to_file(char *p_received_data, int p_data_length, unsigned int p_
         std::cout << std::endl;
         std::cout << "FILE OPEN & CREATE :: SUCCESS" << std::endl;
         std::cout << "-- WRITE :: START --" << std::endl;
-
-        outputfile << p_received_data + 12;
-
+        // std::string x(p_received_data+12);
+        // std::cout << "DATA --> " << std::endl;
+        std::cout << p_received_data + 12 << std::endl;
+        
+        
+        // outputfile << x;
+        // outputfile.write(p_received_data+12, p_data_length);
         std::cout << "-- WRITE :: END --" << std::endl;
 
         // close the output file.
