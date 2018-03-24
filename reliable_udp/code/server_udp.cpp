@@ -277,7 +277,7 @@ LISTEN_AGAIN:
             fd_set fds;
             struct timeval tv;
             tv.tv_sec = 0;
-            tv.tv_usec = 10000;
+            tv.tv_usec = 0;
             std::cout << "TIMER TIMEOUT ::  secs --> " << tv.tv_sec << " | usec --> " << tv.tv_usec
                       << std::endl;
             std::cout << std::endl;

@@ -118,8 +118,9 @@ int main(int argc, char const *argv[]) {
     int waiting_ack_count = 0;
     char* data;
     // -----------------------------
-    std::string filename = "server_r_udp.cpp";
+    // std::string filename = "server_r_udp.cpp";
     // std::string filename = "1mb.txt";
+    std::string filename = "1234.txt";
     memset(file_request, 0, sizeof(file_request));
     file_request[0] = '-';
     file_request[1] = packet_ack_flg;
@@ -359,7 +360,7 @@ int write_data_to_file(char *p_received_data, int p_data_length, unsigned int p_
         
         
         // outputfile << x;
-        // outputfile.write(p_received_data+12, p_data_length);
+        outputfile.write(p_received_data+12, p_data_length);
         std::cout << "-- WRITE :: END --" << std::endl;
 
         // close the output file.
