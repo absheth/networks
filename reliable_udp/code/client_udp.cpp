@@ -115,10 +115,12 @@ int main(int argc, char const *argv[]) {
     unsigned int waiting_seq_no = 0;
     int already_received = 0;
     int waiting_ack_count = 0;
-    char *data;
+    int hard_timeout = 10;  // seconds
+    int first_packet = 0;
+    int file_request_count = 0;
     // -----------------------------
     // std::string filename = "server_r_udp.cpp";
-    std::string filename = "1mb.txt";
+    std::string filename = "2mb.txt";
     // std::string filename = "1234.txt";
     memset(file_request, 0, sizeof(file_request));
     file_request[0] = '-';
@@ -138,7 +140,7 @@ int main(int argc, char const *argv[]) {
         perror("sending error");
         return -1;
     }
-    memset(file_request, 0, sizeof(file_request));
+    // memset(file_request, 0, sizeof(file_request));
 
     // -----------------------------
     std::cout << "------------ RESPONSE START ------------" << '\n';
@@ -146,11 +148,42 @@ int main(int argc, char const *argv[]) {
     std::cout << "WINDOW SIZE --> " << advertised_window << std::endl;
 
     while (1) {
-        memset(receive_buffer, 0, PACKET_SIZE);
-        bytes_received = recvfrom(socketFD, receive_buffer, PACKET_SIZE, 0,
-                                  (struct sockaddr *)&serveraddr, (socklen_t *)&serverlen);
-        // std::cout << "RECEIVE BUFFER --> " << receive_buffer+12 << std::endl;
+        int rval;
+        fd_set fds;
+        struct timeval tv;
+        tv.tv_sec = hard_timeout;
+        tv.tv_usec = 0;
+        //  std::cout << "TIMER ::  secs --> " << tv.tv_sec << " | usec --> " << tv.tv_usec
+        //            << std::endl;
+        //  std::cout << std::endl;
 
+        FD_ZERO(&fds);
+        FD_SET(socketFD, &fds);
+        rval = select(socketFD + 1, &fds, NULL, NULL, &tv);
+        std::cout << "RVAL FROM SELECT --> " << rval << std::endl;
+
+        if (rval < 0) {
+            perror("~~~~~ TIMER :: ERROR IN SELECT ~~~~~");
+            exit(0);
+        } else if (rval == 0) {
+            // packet_ack_flg = 'p';
+            // time_calc_flg = 'y';
+            // std::cout << "setting packet_ack_flg --> " << packet_ack_flg << std::endl;
+            // std::cout << std::endl;
+            goto SEND_DATA_PACKET;
+        } else {
+            // Data available to read. READ IT.
+            //
+            memset(receive_buffer, 0, PACKET_SIZE);
+            bytes_received = recvfrom(socketFD, receive_buffer, PACKET_SIZE, 0,
+                                      (struct sockaddr *)&serveraddr, (socklen_t *)&serverlen);
+        }
+        // packet_ack_flg = 'a';
+        // memset(receive_buffer, 0, PACKET_SIZE);
+        // bytes_received = recvfrom(socketFD, receive_buffer, PACKET_SIZE, 0,
+        //                           (struct sockaddr *)&serveraddr, (socklen_t *)&serverlen);
+        // std::cout << "RECEIVE BUFFER --> " << receive_buffer+12 << std::endl;
+        first_packet++; 
         if (bytes_received < 0) {
             std::cout << std::endl;
             std::cout << "##############" << std::endl;
@@ -158,10 +191,16 @@ int main(int argc, char const *argv[]) {
             std::cout << "##############" << std::endl;
             std::cout << std::endl;
             perror("RECEIVE_ERROR");
-            // exit(-1);
+            exit(-1);
+        }
+
+        packet_ack_flg = receive_buffer[1];
+        if (packet_ack_flg == 'n') {
+            std::cout << "NOT AVAILABLE ON THE SERVER --> " << filename << std::endl;
+            break;
         }
         packet_padding = receive_buffer[0];
-        packet_ack_flg = receive_buffer[1];
+        // packet_ack_flg = receive_buffer[1];
         advertised_window = char_to_short(receive_buffer, 2);
         packet_seq_no = char_to_int(receive_buffer, 4);
         packet_ack_no = char_to_int(receive_buffer, 8);
@@ -180,11 +219,6 @@ int main(int argc, char const *argv[]) {
         std::cout << "************************************************************************"
                   << std::endl;
         std::cout << std::endl;
-
-        if (packet_ack_flg == 'n') {
-            std::cout << "NOT AVAILABLE ON THE SERVER --> " << filename << std::endl;
-            break;
-        }
 
         if (client_waiting_on == 0 && packet_seq_no != 0) {
             std::cout << std::endl;
@@ -229,13 +263,27 @@ int main(int argc, char const *argv[]) {
         }
         // CHECK_SENDING
         total_packets_received++;
+
+    SEND_DATA_PACKET:
         char *send_ack_packet = (char *)calloc(PACKET_SIZE, sizeof(char));
         memset(send_ack_packet, 0, PACKET_SIZE);
-        send_ack_packet[0] = packet_padding;
-        send_ack_packet[1] = packet_ack_flg;
-        // number_to_char(send_ack_packet, advertised_window, client_waiting_on, client_waiting_on,
-        // 2);
-        number_to_char(send_ack_packet, advertised_window, client_waiting_on, packet_ack_no, 2);
+        if (!first_packet) {
+            if(file_request_count++ == 30){
+                std::cout << "FILE REQUESTED TOO MANY TIMES -- " << file_request_count << std::endl;
+                std::cout << "** ENDING REQUEST FROM CLIENT ** " << std::endl;
+                exit(0);
+            }
+            memcpy(send_ack_packet, file_request, sizeof(file_request));
+
+            std::cout << "NO DATA FROM SERVER" << std::endl;
+            std::cout << "SENDING REQUEST AGAIN --> " << send_ack_packet+HEADER_SIZE << std::endl;
+        } else {
+            send_ack_packet[0] = packet_padding;
+            send_ack_packet[1] = packet_ack_flg;
+            // number_to_char(send_ack_packet, advertised_window, client_waiting_on,
+            // client_waiting_on, 2);
+            number_to_char(send_ack_packet, advertised_window, client_waiting_on, packet_ack_no, 2);
+        }
         int ack_sendto_value = sendto(socketFD, send_ack_packet, PACKET_SIZE, 0,
                                       (struct sockaddr *)&serveraddr, serverlen);
         std::cout << std::endl;
@@ -342,8 +390,8 @@ int write_data_to_file(char *p_received_data, int p_data_length, unsigned int p_
     //  std::cout << "******************************************************" << std::endl;
     //  std::cout << std::endl;
 
-    // char filename[] = "/Users/absheth/course/2-networks/reliable_udp/outputs/test.txt";
-    char filename[] = "/u/absheth/networks/reliable_udp/output/test.txt";
+    char filename[] = "/Users/absheth/course/2-networks/reliable_udp/outputs/test.txt";
+    // char filename[] = "/u/absheth/networks/reliable_udp/output/test.txt";
     int l_return = SUCCESS;
     std::ofstream outputfile;
 
