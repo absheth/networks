@@ -46,7 +46,7 @@ void number_to_char(char *p_char, unsigned short p_short_num, unsigned int p_seq
 int write_data_to_file(char *p_received_data, int p_data_length, unsigned int p_packet_number);
 void service_request(int p_listen_socket);
 int start_server();
-void calc_timeout(unsigned int sampleRTT, unsigned int *estimatedRTT, unsigned int *deviation,
+void calc_timeout(unsigned int sampleRTT, unsigned int *estimatedRTT, unsigned int *deviationRTT,
                   unsigned int *timeout_value);
 // -----------------------------------------------------------------------
 
@@ -118,6 +118,7 @@ void service_request(int p_listen_socket) {
     unsigned int nextseqnum;  // Increment when new sending new packet.
     auto start = std::chrono::high_resolution_clock::now();
     auto finish = std::chrono::high_resolution_clock::now();
+
     // -----------------------------
 LISTEN_AGAIN:
 
@@ -162,6 +163,9 @@ LISTEN_AGAIN:
     int datasize;
     unsigned int timeout_value;
     char time_calc_flg;
+    unsigned int sampleRTT;
+    unsigned int estimatedRTT;
+    unsigned int deviationRTT;
     std::cout << std::endl;
     std::cout << "REQUEST :: VALID" << std::endl;
     std::cout << "REQUEST :: file --> " << receive_buffer + HEADER_SIZE << std::endl;
@@ -216,7 +220,7 @@ LISTEN_AGAIN:
         sendsize = 0;
         datasize = 0;
         timeout_value = 1;
-        time_calc_flg = 'y';
+        time_calc_flg = 'n';
         std::cout << "Advertised window --> " << advertised_window << std::endl;
         std::cout << "TOTAL PACKETS --> " << total_packets << std::endl;
 
@@ -302,7 +306,12 @@ LISTEN_AGAIN:
                     number_to_char(packet, advertised_window, send_index, packet_ack_no, 2);
                 }
                 // std::cout << "SENDING --> " << (packet+HEADER_SIZE) << std::endl;
+                if (time_calc_flg == 'n') {
+                    auto start = std::chrono::high_resolution_clock::now();
+                    std::cout << " SETTING TIMER ON PACKET --> " << send_index << std::endl;
 
+                    time_calc_flg = 'y';
+                }
                 sendto_value = sendto(p_listen_socket, packet, sendsize, 0,
                                       (struct sockaddr *)&clientaddr, clientlen);
                 // std::cout << "SENDTO VALUE --> " << sendto_value << std::endl;
@@ -419,7 +428,14 @@ LISTEN_AGAIN:
                 nextseqnum += base;
                 if (time_calc_flg == 'y') {
                     // calculate estimated time
-
+                    //
+                    std::cout << "STOPPING TIMER ON PACKET --> " << packet_ack_no << std::endl;
+                    auto finish = std::chrono::high_resolution_clock::now();
+                    std::chrono::duration<double> elapsed = finish - start;
+                    long long microseconds =
+                        std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
+                    std::cout << "microseconds --> " << microseconds << std::endl;
+                    calc_timeout(microseconds, &estimatedRTT, &deviationRTT, &timeout_value);
                     time_calc_flg = 'n';
                 }
                 std::cout << std::endl;
@@ -513,6 +529,10 @@ void number_to_char(char *p_char, unsigned short p_short_num, unsigned int p_seq
 }
 // -----------------------------------------------------------------------
 
-void calc_timeout(unsigned int sampleRTT, unsigned int *estimatedRTT, unsigned int *deviation,
+void calc_timeout(unsigned int sampleRTT, unsigned int *estimatedRTT, unsigned int *deviationRTT,
                   unsigned int *timeout_value) {
+    *estimatedRTT = 0.875 * (*estimatedRTT) + 0.125 * sampleRTT;
+    *deviationRTT = 0.77 * *deviationRTT + 0.25 * (*estimatedRTT - sampleRTT);
+    *timeout_value = *timeout_value + 4 * *deviationRTT;
+    std::cout << "NEW TIMEOUT --> " << *timeout_value << std::endl;
 }
