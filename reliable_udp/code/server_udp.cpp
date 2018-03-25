@@ -148,14 +148,13 @@ LISTEN_AGAIN:
     unsigned int packet_ack_no;
     int total_packets;
     char *packet;
-    char send_ack_field;
     int sendto_value;
     unsigned int send_index;
     int sendsize;
     int datasize;
     std::cout << std::endl;
     std::cout << "REQUEST :: VALID" << std::endl;
-    std::cout << "REQUEST :: file --> " << receive_buffer+HEADER_SIZE<< std::endl;
+    std::cout << "REQUEST :: file --> " << receive_buffer + HEADER_SIZE << std::endl;
 
     if (!request_error) {
         file_descriptor = fopen(receive_buffer + HEADER_SIZE, "rb");
@@ -168,17 +167,19 @@ LISTEN_AGAIN:
         file[fsize] = 0;
         memset(receive_buffer, 0, PACKET_SIZE);
 
+        // DEBUG
+        /*
         std::cout << std::endl;
         std::cout << "*********************************************" << std::endl;
         std::cout << "FILE LOADED :: DETAILS" << std::endl;
         std::cout << "FILE :: fsize --> " << fsize << std::endl;
-        std::cout << "FILE --> " <<  file << std::endl;
-        
+        std::cout << "FILE --> " << file << std::endl;
+
         std::cout << "*********************************************" << std::endl;
         std::cout << std::endl;
-
+        */
         // INITIALIZATION
-         
+
         base = start_index;
         advertised_window = 9;  // Make it dynamic. Command-line arugment
         packet_padding = '-';
@@ -186,14 +187,14 @@ LISTEN_AGAIN:
         packet_seq_no = base;
         packet_ack_no = base;
         total_packets = fsize / DATA_SIZE + ((fsize % DATA_SIZE == 0 ? 0 : 1));
-        sendto_value = 0;
+        // sendto_value = 0;
         send_index = 0;
         nextseqnum = 0;
         sendsize = 0;
         datasize = 0;
         std::cout << "Advertised window --> " << advertised_window << std::endl;
-       std::cout << "TOTAL PACKETS --> " << total_packets  << std::endl;
-        
+        std::cout << "TOTAL PACKETS --> " << total_packets << std::endl;
+
         std::cout << std::endl;
         std::cout << "~~~~~~~~ FILE SENDING :: START ~~~~~~~~" << std::endl;
         std::cout << std::endl;
@@ -208,7 +209,7 @@ LISTEN_AGAIN:
         std::cout << "-- INITIAL DETAILS --" << std::endl;
         std::cout << std::endl;
 
-        std::cout << std::endl;
+        // std::cout << std::endl;
         // nextseqnum = (total_packets / advertised_window != 0 ? advertised_window
         //                                                      : total_packets %
         //                                                      advertised_window);
@@ -217,9 +218,15 @@ LISTEN_AGAIN:
             // if (nextseqnum == total_packets && base == nextseqnum) {
         OUTER:
             if (nextseqnum == total_packets) {
+                // SET TO INITIAL VALUES FOR SERVING AGAIN.
+                //
+                base = 0;
+                nextseqnum = 0;
+                send_index = 0;
+                sendsize = 0;
+                sendto_value = 0;
                 std::free(file);
                 break;
-                
             }
 
         SEND_DATA_PACKET:
@@ -231,38 +238,40 @@ LISTEN_AGAIN:
                     std::cout << std::endl;
                     std::cout << "###### ALL PACKETS SENT ######" << std::endl;
                     nextseqnum = send_index;
+                    std::cout << "Setting nextseqnum --> " << nextseqnum << std::endl;
                     std::cout << "<< NOT SENDING ANYMORE >>" << std::endl;
                     std::cout << "JUMP TO :: RECEIVE " << std::endl;
+                    
+                    std::cout << "###### ALL PACKETS SENT ######" << std::endl;
                     goto RECEIVE;
                 }
-                std::cout << "SENDING DATA FOR PACKET --> " << send_index << std::endl;
+                // std::cout << "SENDING DATA FOR PACKET --> " << send_index << std::endl;
 
                 packet = (char *)calloc(PACKET_SIZE, sizeof(char));
                 memset(packet, 0, PACKET_SIZE);
-                 // LAST_PACKET
+                // LAST_PACKET
                 sendsize = PACKET_SIZE;
                 datasize = DATA_SIZE;
-                if(send_index == (total_packets-1)){
-                   packet_ack_flg = 'x';
-                    datasize = (fsize - send_index*DATA_SIZE);
+                if (send_index == (total_packets - 1)) {
+                    packet_ack_flg = 'x';
+                    datasize = (fsize - send_index * DATA_SIZE);
                     sendsize = datasize + HEADER_SIZE;
                 }
 
-                
                 packet[0] = packet_padding;
                 packet[1] = packet_ack_flg;
                 number_to_char(packet, advertised_window, send_index, packet_ack_no, 2);
                 memcpy(packet + HEADER_SIZE, file + (DATA_SIZE * send_index), datasize);
-                std::cout << "SENDING --> " << (packet+HEADER_SIZE) << std::endl;
-                
+                // std::cout << "SENDING --> " << (packet+HEADER_SIZE) << std::endl;
+
                 sendto_value = sendto(p_listen_socket, packet, sendsize, 0,
                                       (struct sockaddr *)&clientaddr, clientlen);
-                std::cout << "SENDTO VALUE --> " << sendto_value << std::endl;
+                // std::cout << "SENDTO VALUE --> " << sendto_value << std::endl;
                 if (sendto_value < 0) {
-                    std::cout << "SENDING FAILED :: Packet --> " << send_index << std::endl;
+                    // std::cout << "SENDING FAILED :: Packet --> " << send_index << std::endl;
                     perror("PACKET SENDING FAILED");
                 }
-                
+
                 std::free(packet);
                 // exit(0);
                 std::cout << "PACKET SENT :: Packet --> " << send_index << std::endl;
@@ -271,14 +280,14 @@ LISTEN_AGAIN:
 
         RECEIVE:
             std::cout << std::endl;
-            std::cout << "** WAITING FOR ACK **" << std::endl;
+            std::cout << "** WAITING FOR ACK --> " << base << std::endl;
             memset(receive_buffer, 0, PACKET_SIZE);
             int rval;
             fd_set fds;
             struct timeval tv;
             tv.tv_sec = 0;
-            tv.tv_usec = 0;
-            std::cout << "TIMER TIMEOUT ::  secs --> " << tv.tv_sec << " | usec --> " << tv.tv_usec
+            tv.tv_usec = 1000;
+            std::cout << "TIMER ::  secs --> " << tv.tv_sec << " | usec --> " << tv.tv_usec
                       << std::endl;
             std::cout << std::endl;
 
@@ -294,10 +303,14 @@ LISTEN_AGAIN:
                 // TIMEOUT
                 //
                 // ALWAYS SEND PACKETS ON TIME OUT
+                // std::cout << std::endl;
+                // std::cout << "***** TIMER :: TIMEOUT *****" << std::endl;
+                // std::cout << "JUMPING TO --> SEND_DATA_PACKET " << std::endl;
+                // std::cout << std::endl;
+                packet_ack_flg = 'p';
+                std::cout << "setting packet_ack_flg --> " << packet_ack_flg << std::endl;
                 std::cout << std::endl;
-                std::cout << "***** TIMER :: TIMEOUT *****" << std::endl;
-                std::cout << "JUMPING TO --> SEND_DATA_PACKET " << std::endl;
-                std::cout << std::endl;
+
                 goto SEND_DATA_PACKET;
             } else {
                 // Data available to read. READ IT.
@@ -310,7 +323,7 @@ LISTEN_AGAIN:
                 perror("RECEIVE :: ERROR");
                 // exit(-1);
             }
-            
+
             // EXTRACTION
             packet_padding = receive_buffer[0];
             packet_ack_flg = receive_buffer[1];
@@ -321,20 +334,22 @@ LISTEN_AGAIN:
             std::cout << std::endl;
             std::cout << "******************************************************" << std::endl;
             std::cout << "" << std::endl;
-            std::cout << "RECEIVE :: bytes_received --> " << bytes_received << std::endl;
-            std::cout << "RECEIVE :: packet_padding --> " << packet_padding << std::endl;
-            std::cout << "RECEIVE :: packet_ack_flg --> " << packet_ack_flg << std::endl;
-            std::cout << "RECEIVE :: advertised_window --> " << advertised_window << std::endl;
-            std::cout << "RECEIVE :: packet_seq_no --> " << packet_seq_no << std::endl;
-            std::cout << "RECEIVE :: packet_ack_no --> " << packet_ack_no << std::endl;
 
-            std::cout << "******************************************************" << std::endl;
+            std::cout << "TOTAL PACKETS --> " << total_packets << std::endl;
+            // std::cout << "RECEIVED :: bytes_received --> " << bytes_received << std::endl;
+            // std::cout << "RECEIVED :: packet_padding --> " << packet_padding << std::endl;
+            std::cout << "RECEIVED :: packet_ack_flg --> " << packet_ack_flg << std::endl;
+            // std::cout << "RECEIVED :: advertised_window --> " << advertised_window << std::endl;
+            std::cout << "RECEIVED :: packet_seq_no --> " << packet_seq_no << std::endl;
+            std::cout << "RECEIVED :: packet_ack_no --> " << packet_ack_no << std::endl;
+
             std::cout << std::endl;
             if (packet_ack_flg == 'x') {
                 // ALL PACKETS ACKNOWLEDGEMENT
-                 
+                std::cout << "ACK FOR LAST PACKET --> " << packet_ack_no << std::endl;
+
                 base = packet_ack_no;
-                nextseqnum = packet_ack_no;
+                // nextseqnum = packet_ack_no;
                 std::cout << std::endl;
                 std::cout << "----------------------" << std::endl;
                 std::cout << "UPDATED :: base --> " << base << std::endl;
@@ -343,25 +358,30 @@ LISTEN_AGAIN:
                 std::cout << std::endl;
                 std::cout << "-------- ALL PACKETS ACKNOWLEDGED ------- " << std::endl;
                 std::cout << "JUMP TO :: OUTER" << std::endl;
+                std::cout << "******************************************************" << std::endl;
+
                 goto OUTER;
             }
             if (packet_ack_no >= base) {
-                base += packet_ack_no - base;
-                nextseqnum += packet_ack_no-nextseqnum;
+                // if(base == 0 && packet_ack_no == 0) {
+                //     base = 1;
+                // }
+                base += packet_ack_no+1 - base;
+                // nextseqnum += packet_ack_no - nextseqnum;
+                nextseqnum += base;
                 std::cout << std::endl;
                 std::cout << "----------------------" << std::endl;
                 std::cout << "UPDATED :: base --> " << base << std::endl;
                 std::cout << "UPDATED :: nextseqnum --> " << nextseqnum << std::endl;
                 std::cout << "----------------------" << std::endl;
                 std::cout << std::endl;
+            } else {
+
+                std::cout << "ACK ALREADY RECEIVED :: packet_ack_no --> " << packet_ack_no  << std::endl;
                 
-                //   if (nextseqnum == total_packets-1) {
-                //       std::cout << std::endl;
-                //       std::cout << "-------- ALL PACKETS ACKNOWLEDGED ------- " << std::endl;
-                //       std::cout << "JUMP TO :: OUTER" << std::endl;
-                //       goto OUTER;
-                //   }
+                std::cout << "" << std::endl;
             }
+            std::cout << "******************************************************" << std::endl;
             goto RECEIVE;
         }  // END_MAIN_WHILE
     }
@@ -397,7 +417,7 @@ int start_server() {
     return SUCCESS;
 }
 // -----------------------------------------------------------------------
- 
+
 // -----------------------------------------------------------------------
 // CONVERSION FUNCTIONS
 /* Convert unsigned char array to int */
@@ -443,5 +463,3 @@ void number_to_char(char *p_char, unsigned short p_short_num, unsigned int p_seq
     p_char[p_offset + 9] = p_ackno & 0xFF;
 }
 // -----------------------------------------------------------------------
-
-

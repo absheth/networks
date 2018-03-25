@@ -97,8 +97,7 @@ int main(int argc, char const *argv[]) {
     //
 
     // VARIABLE_DECLARATIONS
-    unsigned int receive_window = 0;
-    unsigned int window_size = 0;
+    unsigned int advertised_window = 0;
     char file_request[PACKET_SIZE];
     char receive_buffer[PACKET_SIZE];
     int total_packets_received = 0;
@@ -116,16 +115,16 @@ int main(int argc, char const *argv[]) {
     unsigned int waiting_seq_no = 0;
     int already_received = 0;
     int waiting_ack_count = 0;
-    char* data;
+    char *data;
     // -----------------------------
     // std::string filename = "server_r_udp.cpp";
-    // std::string filename = "1mb.txt";
-    std::string filename = "1234.txt";
+    std::string filename = "1mb.txt";
+    // std::string filename = "1234.txt";
     memset(file_request, 0, sizeof(file_request));
     file_request[0] = '-';
     file_request[1] = packet_ack_flg;
-    receive_window = 65535;
-    number_to_char(file_request, receive_window, 0, 0, 2);
+    advertised_window = 65535;
+    number_to_char(file_request, advertised_window, 0, 0, 2);
     memcpy(file_request + 12, filename.c_str(), filename.length());
     std::cout << "--> REQUESTING FILE: " << filename << " <--" << std::endl;
     std::cout << std::endl;
@@ -133,7 +132,7 @@ int main(int argc, char const *argv[]) {
     auto start = std::chrono::high_resolution_clock::now();
     int request_sendto_value = sendto(socketFD, file_request, sizeof(file_request), 0,
                                       (struct sockaddr *)&serveraddr, serverlen);
-    std::cout << "REQUEST_SENDTO_VALUE --> " << request_sendto_value << std::endl;
+    // std::cout << "REQUEST_SENDTO_VALUE --> " << request_sendto_value << std::endl;
 
     if (request_sendto_value < 0) {
         perror("sending error");
@@ -143,15 +142,15 @@ int main(int argc, char const *argv[]) {
 
     // -----------------------------
     std::cout << "------------ RESPONSE START ------------" << '\n';
-    window_size = 9;
-    std::cout << "WINDOW SIZE --> " << window_size << std::endl;
+    advertised_window = 9;
+    std::cout << "WINDOW SIZE --> " << advertised_window << std::endl;
 
     while (1) {
         memset(receive_buffer, 0, PACKET_SIZE);
         bytes_received = recvfrom(socketFD, receive_buffer, PACKET_SIZE, 0,
                                   (struct sockaddr *)&serveraddr, (socklen_t *)&serverlen);
-         // std::cout << "RECEIVE BUFFER --> " << receive_buffer+12 << std::endl;
-        
+        // std::cout << "RECEIVE BUFFER --> " << receive_buffer+12 << std::endl;
+
         if (bytes_received < 0) {
             std::cout << std::endl;
             std::cout << "##############" << std::endl;
@@ -163,7 +162,7 @@ int main(int argc, char const *argv[]) {
         }
         packet_padding = receive_buffer[0];
         packet_ack_flg = receive_buffer[1];
-        receive_window = char_to_short(receive_buffer, 2);
+        advertised_window = char_to_short(receive_buffer, 2);
         packet_seq_no = char_to_int(receive_buffer, 4);
         packet_ack_no = char_to_int(receive_buffer, 8);
         // memset(receive_buffer, 0, PACKET_SIZE);
@@ -172,15 +171,20 @@ int main(int argc, char const *argv[]) {
                   << std::endl;
 
         std::cout << "RECEIVED :: received_bytes --> " << bytes_received << std::endl;
-        std::cout << "RECEIVED :: packet_padding --> " << packet_padding << std::endl;
+        // std::cout << "RECEIVED :: packet_padding --> " << packet_padding << std::endl;
         std::cout << "RECEIVED :: packet_ack_flg --> " << packet_ack_flg << std::endl;
-        std::cout << "RECEIVED :: receive_window --> " << receive_window << std::endl;
+        std::cout << "RECEIVED :: advertised_window --> " << advertised_window << std::endl;
         std::cout << "RECEIVED :: packet_seq_no  --> " << packet_seq_no << std::endl;
         std::cout << "RECEIVED :: packet_ack_no  --> " << packet_ack_no << std::endl;
 
         std::cout << "************************************************************************"
                   << std::endl;
         std::cout << std::endl;
+
+        if (packet_ack_flg == 'n') {
+            std::cout << "NOT AVAILABLE ON THE SERVER --> " << filename << std::endl;
+            break;
+        }
 
         if (client_waiting_on == 0 && packet_seq_no != 0) {
             std::cout << std::endl;
@@ -190,7 +194,7 @@ int main(int argc, char const *argv[]) {
                       << std::endl;
 
             packet_drop_count++;
-            std::cout << std::endl;
+            total_packets_received++;
             continue;
         } else if (client_waiting_on == packet_seq_no) {
             std::cout << std::endl;
@@ -201,7 +205,7 @@ int main(int argc, char const *argv[]) {
             // memcpy(data, receive_buffer+HEADER_SIZE, bytes_received-HEADER_SIZE);
             // std::cout << data << std::endl;
             // std::free(data);
-            
+
             int write_result =
                 write_data_to_file(receive_buffer, bytes_received - HEADER_SIZE, packet_seq_no);
             if (write_result < 0) {
@@ -211,34 +215,40 @@ int main(int argc, char const *argv[]) {
             if (packet_ack_flg != 'x') {
                 packet_ack_flg = 'a';
             }
-            client_waiting_on = packet_seq_no+1;
-            
-            total_packets_received++;
-            // exit(0);
+            client_waiting_on = packet_seq_no + 1;
+            packet_ack_no = packet_seq_no;
         } else {
             std::cout << std::endl;
+            std::cout << "EXPECTED PACKET --> " << client_waiting_on << std::endl;
             std::cout << "PACKET OUT OF ORDER --> " << packet_seq_no << std::endl;
             std::cout << "DROPPING THE PACKET --> " << packet_seq_no << std::endl;
-            total_packets_received++;
+            std::cout << std::endl;
+            packet_ack_no = client_waiting_on - 1;
             packet_drop_count++;
+            packet_ack_flg = 'p';
         }
-
+        // CHECK_SENDING
+        total_packets_received++;
         char *send_ack_packet = (char *)calloc(PACKET_SIZE, sizeof(char));
         memset(send_ack_packet, 0, PACKET_SIZE);
         send_ack_packet[0] = packet_padding;
         send_ack_packet[1] = packet_ack_flg;
-        number_to_char(send_ack_packet, receive_window, client_waiting_on, client_waiting_on, 2);
+        // number_to_char(send_ack_packet, advertised_window, client_waiting_on, client_waiting_on,
+        // 2);
+        number_to_char(send_ack_packet, advertised_window, client_waiting_on, packet_ack_no, 2);
         int ack_sendto_value = sendto(socketFD, send_ack_packet, PACKET_SIZE, 0,
                                       (struct sockaddr *)&serveraddr, serverlen);
         std::cout << std::endl;
         std::cout << "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
                   << std::endl;
         std::cout << "AFTER SENDING :: ack_sendto_value --> " << ack_sendto_value << std::endl;
-        std::cout << "AFTER SENDING :: padding          --> " << send_ack_packet[0] << std::endl;
-        std::cout << "AFTER SENDING :: ack flg          --> " << send_ack_packet[1] << std::endl;
-        std::cout << "AFTER SENDING :: receive_window   --> " << receive_window << std::endl;
+        // std::cout << "AFTER SENDING :: padding          --> " << send_ack_packet[0] << std::endl;
+        std::cout << "AFTER SENDING :: packet_ack_flg   --> " << send_ack_packet[1] << std::endl;
+        // std::cout << "AFTER SENDING :: advertised_window   --> " << advertised_window <<
+        // std::endl;
         std::cout << "AFTER SENDING :: sequence number  --> " << client_waiting_on << std::endl;
-        std::cout << "AFTER SENDING :: ack number       --> " << client_waiting_on << std::endl;
+        std::cout << "AFTER SENDING :: ack number       --> " << packet_ack_no << std::endl;
+        // std::cout << "AFTER SENDING :: ack number       --> " << packet_ack_no << std::endl;
         std::cout << "AFTER SENDING :: client_waiting_on--> " << client_waiting_on << std::endl;
         std::cout << "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
                   << std::endl;
@@ -257,18 +267,20 @@ int main(int argc, char const *argv[]) {
     auto finish = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = finish - start;
     std::cout << "Elapsed time: " << elapsed.count() << " s\n";
+    if (packet_ack_flg != 'n') {
+        // FINAL_COMPUTATION
+        total_received = ((client_waiting_on - 1) * DATA_SIZE) + last_pack_size;
+        std::cout << std::endl;
+        std::cout << std::endl;
+        std::cout << "************ FINAL STATISTICS  ************ " << std::endl;
+        std::cout << "Total bytes received: " << total_received << std::endl;
+        std::cout << "Total packets received: " << total_packets_received << std::endl;
+        std::cout << "Total packets dropped: " << packet_drop_count << std::endl;
 
-    // FINAL_COMPUTATION
-    total_received = ((client_waiting_on - 1) * DATA_SIZE) + last_pack_size;
-    std::cout << std::endl;
-    std::cout << std::endl;
-    std::cout << "************ FINAL STATISTICS  ************ " << std::endl;
-    std::cout << "Total bytes received: " << total_received << std::endl;
-    std::cout << "Total packets received: " << total_packets_received << std::endl;
-    std::cout << "Total packets dropped: " << packet_drop_count << std::endl;
+        std::cout << "************ FINAL STATISTICS  ************ " << std::endl;
+        std::cout << std::endl;
+    }
 
-    std::cout << "************ FINAL STATISTICS  ************ " << std::endl;
-    std::cout << std::endl;
     std::cout << std::endl;
     std::cout << "---------------------------- END ----------------------------" << '\n';
     //***************************************************
@@ -301,7 +313,7 @@ unsigned short char_to_short(char *p_charstream, int p_offset) {
 /* Convert unsigned into char array of 4 bytes */
 void number_to_char(char *p_char, unsigned short p_short_num, unsigned int p_seqnum,
                     unsigned int p_ackno, int p_offset) {
-    // converting receive_window
+    // converting advertised_window
     // std::cout << "p_short_num --> " << p_short_num << std::endl;
 
     p_char[p_offset + 0] = (p_short_num >> 8) & 0xFF;
@@ -323,14 +335,15 @@ void number_to_char(char *p_char, unsigned short p_short_num, unsigned int p_seq
 
 // WRITE_DATA_FUNCTION
 int write_data_to_file(char *p_received_data, int p_data_length, unsigned int p_packet_number) {
-    std::cout << std::endl;
-    std::cout << "******************************************************" << std::endl;
-    std::cout << " Writing data :: Length --> " << p_data_length << " | Packet --> "
-              << p_packet_number << std::endl;
-    std::cout << "******************************************************" << std::endl;
-    std::cout << std::endl;
+    //  std::cout << std::endl;
+    //  std::cout << "******************************************************" << std::endl;
+    //  std::cout << " Writing data :: Length --> " << p_data_length << " | Packet --> "
+    //            << p_packet_number << std::endl;
+    //  std::cout << "******************************************************" << std::endl;
+    //  std::cout << std::endl;
 
-    char filename[] = "test.txt";
+    // char filename[] = "/Users/absheth/course/2-networks/reliable_udp/outputs/test.txt";
+    char filename[] = "/u/absheth/networks/reliable_udp/output/test.txt";
     int l_return = SUCCESS;
     std::ofstream outputfile;
 
@@ -341,27 +354,22 @@ int write_data_to_file(char *p_received_data, int p_data_length, unsigned int p_
     // test if fail to open the file.
     if (outputfile.fail()) {
         std::cout << std::endl;
-        std::cout << "Creating and opening file " << filename << " for writing " << std::endl;
+        // std::cout << "Creating and opening file " << filename << " for writing " << std::endl;
         std::cout << "FILE OPEN & CREATE :: FAILURE" << std::endl;
-        std::cout << std::endl;
-        std::cout << "Possible errors: " << std::endl;
-        std::cout << "1. The file does not exists." << std::endl;
-        std::cout << "2. The path was not found." << std::endl;
-        std::cout << std::endl;
+        // std::cout << std::endl;
+        // std::cout << "Possible errors: " << std::endl;
+        // std::cout << "1. The file does not exists." << std::endl;
+        // std::cout << "2. The path was not found." << std::endl;
+        // std::cout << std::endl;
         l_return = FAILURE;
 
     } else {
-        std::cout << std::endl;
-        std::cout << "FILE OPEN & CREATE :: SUCCESS" << std::endl;
-        std::cout << "-- WRITE :: START --" << std::endl;
-        // std::string x(p_received_data+12);
-        // std::cout << "DATA --> " << std::endl;
-        std::cout << p_received_data + 12 << std::endl;
-        
-        
-        // outputfile << x;
-        outputfile.write(p_received_data+12, p_data_length);
-        std::cout << "-- WRITE :: END --" << std::endl;
+        // std::cout << std::endl;
+        // std::cout << "FILE OPEN & CREATE :: SUCCESS" << std::endl;
+        // std::cout << "-- WRITE :: START --" << std::endl;
+
+        outputfile.write(p_received_data + 12, p_data_length);
+        // std::cout << "-- WRITE :: END --" << std::endl;
 
         // close the output file.
         outputfile.close();
@@ -370,11 +378,18 @@ int write_data_to_file(char *p_received_data, int p_data_length, unsigned int p_
             std::cout << "CLOSE :: FAILURE " << std::endl;
             std::cout << std::endl;
             l_return = FAILURE;
-        } else {
-            std::cout << "CLOSE :: SUCCESS " << std::endl;
-            std::cout << std::endl;
-        }
+        }  // else {
+           // std::cout << "CLOSE :: SUCCESS " << std::endl;
+           //  std::cout << std::endl;
+        // }
     }
+    std::cout << std::endl;
+    std::cout << "******************************************************" << std::endl;
+    std::cout << " Writing data :: Length --> " << p_data_length << " | Packet --> "
+              << p_packet_number << "    ===>>> SUCCESS " << std::endl;
+    std::cout << "******************************************************" << std::endl;
+    std::cout << std::endl;
+
     return l_return;
 }
 
