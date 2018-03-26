@@ -69,8 +69,31 @@ int main(int argc, char const *argv[]) {
     struct sockaddr_in serveraddr;
     struct hostent *server;
     // -----------------------------------------------------------------------
-    std::string server_host = "localhost";
-    int server_port = 9158;
+    std::cout << "argc --> " << argc << std::endl;
+    if (argc != 4) {
+        std::cout << "USAGE: ./client_udp hostname port dropping_prob" << std::endl;
+        exit(0);
+    }
+
+    std::string server_host = argv[1];
+    int server_port = atoi(argv[2]);
+    int dropping_prob = atoi(argv[3]);
+    std::cout << "server --> " << server_host << std::endl;
+    std::cout << "server host  --> " << server_port << std::endl;
+    std::cout << "dropping_prob --> " << dropping_prob << std::endl;
+
+    std::srand(std::time(NULL));
+    int random;
+    // while (1) {
+    //     random = std::rand() % 100;
+    //     std::cout << "RANDOM --> " << random << std::endl;
+    //     // if (random < dropping_prob) {
+    //     //     continue;
+    //     // }
+    // }
+
+    // std::string server_host = "localhost";
+    // int server_port = 9158;
     // -----------------------------------------------------------------------
     // CONNECTION
     socketFD = socket(AF_INET, SOCK_DGRAM, 0);
@@ -118,10 +141,11 @@ int main(int argc, char const *argv[]) {
     int hard_timeout = 10;  // seconds
     int first_packet = 0;
     int file_request_count = 0;
+    // int random = 0;
     // -----------------------------
     // std::string filename = "server_r_udp.cpp";
-    // std::string filename = "1mb.txt";
-    std::string filename = "1234.txt";
+    std::string filename = "1mb.txt";
+    // std::string filename = "1234.txt";
     // std::string filename = "2234.txt";
     memset(file_request, 0, sizeof(file_request));
     file_request[0] = '-';
@@ -179,12 +203,13 @@ int main(int argc, char const *argv[]) {
             bytes_received = recvfrom(socketFD, receive_buffer, PACKET_SIZE, 0,
                                       (struct sockaddr *)&serveraddr, (socklen_t *)&serverlen);
         }
+
         // packet_ack_flg = 'a';
         // memset(receive_buffer, 0, PACKET_SIZE);
         // bytes_received = recvfrom(socketFD, receive_buffer, PACKET_SIZE, 0,
         //                           (struct sockaddr *)&serveraddr, (socklen_t *)&serverlen);
         // std::cout << "RECEIVE BUFFER --> " << receive_buffer+12 << std::endl;
-        first_packet++; 
+        first_packet++;
         if (bytes_received < 0) {
             std::cout << std::endl;
             std::cout << "##############" << std::endl;
@@ -193,6 +218,19 @@ int main(int argc, char const *argv[]) {
             std::cout << std::endl;
             perror("RECEIVE_ERROR");
             exit(-1);
+        }
+
+        if (1) {
+            random = std::rand() % 100;
+            std::cout << "RANDOM --> " << random << std::endl;
+            if (random < dropping_prob) {
+                total_packets_received++;
+                packet_drop_count++;
+                std::cout << "DROPPING THE PACKET --> " << char_to_int(receive_buffer, 4)
+                          << std::endl;
+
+                continue;
+            }
         }
 
         packet_ack_flg = receive_buffer[1];
@@ -252,24 +290,26 @@ int main(int argc, char const *argv[]) {
             }
             client_waiting_on = packet_seq_no + 1;
             packet_ack_no = packet_seq_no;
+
+            total_packets_received++;
         } else {
-            std::cout << std::endl;
-            std::cout << "EXPECTED PACKET --> " << client_waiting_on << std::endl;
-            std::cout << "PACKET OUT OF ORDER --> " << packet_seq_no << std::endl;
-            std::cout << "DROPPING THE PACKET --> " << packet_seq_no << std::endl;
-            std::cout << std::endl;
+            // std::cout << std::endl;
+            // std::cout << "EXPECTED PACKET --> " << client_waiting_on << std::endl;
+            // std::cout << "PACKET OUT OF ORDER --> " << packet_seq_no << std::endl;
+            // std::cout << "DROPPING THE PACKET --> " << packet_seq_no << std::endl;
+            // std::cout << std::endl;
             packet_ack_no = client_waiting_on - 1;
-            packet_drop_count++;
+            // packet_drop_count++;
             packet_ack_flg = 'p';
         }
         // CHECK_SENDING
-        total_packets_received++;
+        // total_packets_received++;
 
     SEND_DATA_PACKET:
         char *send_ack_packet = (char *)calloc(PACKET_SIZE, sizeof(char));
         memset(send_ack_packet, 0, PACKET_SIZE);
         if (!first_packet) {
-            if(file_request_count++ == 30){
+            if (file_request_count++ == 30) {
                 std::cout << "FILE REQUESTED TOO MANY TIMES -- " << file_request_count << std::endl;
                 std::cout << "** ENDING REQUEST FROM CLIENT ** " << std::endl;
                 exit(0);
@@ -277,7 +317,7 @@ int main(int argc, char const *argv[]) {
             memcpy(send_ack_packet, file_request, sizeof(file_request));
 
             std::cout << "NO DATA FROM SERVER" << std::endl;
-            std::cout << "SENDING REQUEST AGAIN --> " << send_ack_packet+HEADER_SIZE << std::endl;
+            std::cout << "SENDING REQUEST AGAIN --> " << send_ack_packet + HEADER_SIZE << std::endl;
         } else {
             send_ack_packet[0] = packet_padding;
             send_ack_packet[1] = packet_ack_flg;
@@ -391,8 +431,8 @@ int write_data_to_file(char *p_received_data, int p_data_length, unsigned int p_
     //  std::cout << "******************************************************" << std::endl;
     //  std::cout << std::endl;
 
-    // char filename[] = "/Users/absheth/course/2-networks/reliable_udp/outputs/test.txt";
-    char filename[] = "/u/absheth/networks/reliable_udp/output/test.txt";
+    char filename[] = "/Users/absheth/course/2-networks/reliable_udp/outputs/test.txt";
+    // char filename[] = "/u/absheth/networks/reliable_udp/output/test.txt";
     int l_return = SUCCESS;
     std::ofstream outputfile;
 

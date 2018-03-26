@@ -171,7 +171,7 @@ LISTEN_AGAIN:
     std::cout << std::endl;
     std::cout << "REQUEST :: VALID" << std::endl;
     std::cout << "REQUEST :: file --> " << receive_buffer + HEADER_SIZE << std::endl;
-
+    int last_packet;
     if (!request_error) {
         file_descriptor = fopen(receive_buffer + HEADER_SIZE, "rb");
         if (file_descriptor == NULL) {
@@ -226,6 +226,7 @@ LISTEN_AGAIN:
         time_calc_flg = 'n';
         estimatedRTT = 0;
         deviationRTT = 1;
+        last_packet = 0;
         std::cout << "Advertised window --> " << advertised_window << std::endl;
         std::cout << "TOTAL PACKETS --> " << total_packets << std::endl;
 
@@ -251,7 +252,7 @@ LISTEN_AGAIN:
         while (1) {
             // if (nextseqnum == total_packets && base == nextseqnum) {
         OUTER:
-            if (base == total_packets) {
+            if (last_packet == total_packets) {
                 // SET TO INITIAL VALUES FOR SERVING AGAIN.
                 //
                 base = 0;
@@ -276,10 +277,12 @@ LISTEN_AGAIN:
                 if (send_index == total_packets) {
                     std::cout << std::endl;
                     std::cout << "###### ALL PACKETS SENT ######" << std::endl;
-                    base = send_index;
+                    
+                    // base = send_index;
                     // std::cout << "Setting nextseqnum --> " << nextseqnum << std::endl;
                     std::cout << "<< NOT SENDING ANYMORE >>" << std::endl;
                     if (packet_ack_flg == 'n') {
+                       last_packet = total_packets; 
                         goto OUTER;
                     }
                     std::cout << "JUMP TO :: RECEIVE " << std::endl;
@@ -314,7 +317,7 @@ LISTEN_AGAIN:
                 // std::cout << "SENDING --> " << (packet+HEADER_SIZE) << std::endl;
                 if (time_calc_flg == 'n' && packet_ack_flg != 'n') {
                     start = std::chrono::high_resolution_clock::now();
-                    std::cout << " SETTING TIMER ON PACKET --> " << send_index << std::endl;
+                    // std::cout << " SETTING TIMER ON PACKET --> " << send_index << std::endl;
                     time_calc_flg = 'y';
                 }
                 sendto_value = sendto(p_listen_socket, packet, sendsize, 0,
@@ -347,14 +350,14 @@ LISTEN_AGAIN:
             }
             // tv.tv_sec = 0;
             // tv.tv_usec = 999999;
-            std::cout << "TIMER ::  secs --> " << tv.tv_sec << " | usec --> " << tv.tv_usec
-                      << std::endl;
-            std::cout << std::endl;
+            // std::cout << "TIMER ::  secs --> " << tv.tv_sec << " | usec --> " << tv.tv_usec
+            //           << std::endl;
+            // std::cout << std::endl;
 
             FD_ZERO(&fds);
             FD_SET(p_listen_socket, &fds);
             rval = select(p_listen_socket + 1, &fds, NULL, NULL, &tv);
-            std::cout << "RVAL FROM SELECT --> " << rval << std::endl;
+            // std::cout << "RVAL FROM SELECT --> " << rval << std::endl;
 
             if (rval < 0) {
                 perror("~~~~~ TIMER :: ERROR IN SELECT ~~~~~");
@@ -369,8 +372,8 @@ LISTEN_AGAIN:
                 // std::cout << std::endl;
                 packet_ack_flg = 'p';
                 time_calc_flg = 'n';
-                std::cout << "setting packet_ack_flg --> " << packet_ack_flg << std::endl;
-                std::cout << std::endl;
+                // std::cout << "setting packet_ack_flg --> " << packet_ack_flg << std::endl;
+                // std::cout << std::endl;
 
                 goto SEND_DATA_PACKET;
             } else {
@@ -408,7 +411,7 @@ LISTEN_AGAIN:
             if (packet_ack_flg == 'x') {
                 // ALL PACKETS ACKNOWLEDGEMENT
                 std::cout << "ACK FOR LAST PACKET --> " << packet_ack_no << std::endl;
-
+                last_packet = total_packets;
                 base = packet_seq_no;
                 // nextseqnum = packet_ack_no;
                 std::cout << std::endl;
@@ -434,7 +437,7 @@ LISTEN_AGAIN:
                 if (time_calc_flg == 'y') {
                     // calculate estimated time
 
-                    std::cout << "STOPPING TIMER ON PACKET --> " << packet_ack_no << std::endl;
+                    // std::cout << "STOPPING TIMER ON PACKET --> " << packet_ack_no << std::endl;
                     finish = std::chrono::high_resolution_clock::now();
                     long long elapsed_micro =
                         std::chrono::duration_cast<std::chrono::microseconds>(finish - start)
