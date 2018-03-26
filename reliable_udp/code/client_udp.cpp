@@ -120,8 +120,8 @@ int main(int argc, char const *argv[]) {
     int file_request_count = 0;
     // -----------------------------
     // std::string filename = "server_r_udp.cpp";
-    std::string filename = "1mb.txt";
-    // std::string filename = "1234.txt";
+    // std::string filename = "1mb.txt";
+    std::string filename = "1234.txt";
     // std::string filename = "2234.txt";
     memset(file_request, 0, sizeof(file_request));
     file_request[0] = '-';
@@ -391,8 +391,8 @@ int write_data_to_file(char *p_received_data, int p_data_length, unsigned int p_
     //  std::cout << "******************************************************" << std::endl;
     //  std::cout << std::endl;
 
-    char filename[] = "/Users/absheth/course/2-networks/reliable_udp/outputs/test.txt";
-    // char filename[] = "/u/absheth/networks/reliable_udp/output/test.txt";
+    // char filename[] = "/Users/absheth/course/2-networks/reliable_udp/outputs/test.txt";
+    char filename[] = "/u/absheth/networks/reliable_udp/output/test.txt";
     int l_return = SUCCESS;
     std::ofstream outputfile;
 
