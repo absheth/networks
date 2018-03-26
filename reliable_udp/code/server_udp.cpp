@@ -46,8 +46,8 @@ void number_to_char(char *p_char, unsigned short p_short_num, unsigned int p_seq
 int write_data_to_file(char *p_received_data, int p_data_length, unsigned int p_packet_number);
 void service_request(int p_listen_socket);
 int start_server();
-void calc_timeout(long sampleRTT, long *estimatedRTT, unsigned long *deviationRTT,
-                  unsigned long *timeout_value);
+void calc_timeout(long sampleRTT, long long &estimatedRTT, int &deviationRTT,
+                  long long &timeout_value);
 // -----------------------------------------------------------------------
 
 // -----------------------------------------------------------------------
@@ -113,8 +113,8 @@ void service_request(int p_listen_socket) {
     unsigned int start_index = 0;
 
     // int total_packets_sent = 0;
-    unsigned int base = 0;    // Last acknowledged packet/sequence number.
-                              // server_waiting_on
+    unsigned int base = 0;  // Last acknowledged packet/sequence number.
+                            // server_waiting_on
     // unsigned int nextseqnum;  // Increment when new sending new packet.
     auto start = std::chrono::high_resolution_clock::now();
     auto finish = std::chrono::high_resolution_clock::now();
@@ -161,12 +161,12 @@ LISTEN_AGAIN:
     unsigned int send_index;
     int sendsize;
     int datasize;
-    unsigned long timeout_value;
+    long long timeout_value;
     unsigned long timeout_value1;
     char time_calc_flg;
     long sampleRTT;
-    long estimatedRTT;
-    unsigned long deviationRTT;
+    long long estimatedRTT;
+    int deviationRTT;
     std::cout << std::endl;
     std::cout << "REQUEST :: VALID" << std::endl;
     std::cout << "REQUEST :: file --> " << receive_buffer + HEADER_SIZE << std::endl;
@@ -220,7 +220,7 @@ LISTEN_AGAIN:
         // nextseqnum = 0;
         sendsize = 0;
         datasize = 0;
-        timeout_value = 50000;
+        timeout_value = 100;
         timeout_value1 = 0;
         time_calc_flg = 'n';
         estimatedRTT = 0;
@@ -258,6 +258,7 @@ LISTEN_AGAIN:
                 send_index = 0;
                 sendsize = 0;
                 sendto_value = 0;
+                time_calc_flg = 'n';
                 if (packet_ack_flg != 'n') {
                     std::free(file);
                 }
@@ -310,10 +311,9 @@ LISTEN_AGAIN:
                     number_to_char(packet, advertised_window, send_index, packet_ack_no, 2);
                 }
                 // std::cout << "SENDING --> " << (packet+HEADER_SIZE) << std::endl;
-                if (time_calc_flg == 'n') {
-                    auto start = std::chrono::high_resolution_clock::now();
+                if (time_calc_flg == 'n' && packet_ack_flg != 'n') {
+                    start = std::chrono::high_resolution_clock::now();
                     std::cout << " SETTING TIMER ON PACKET --> " << send_index << std::endl;
-
                     time_calc_flg = 'y';
                 }
                 sendto_value = sendto(p_listen_socket, packet, sendsize, 0,
@@ -367,7 +367,7 @@ LISTEN_AGAIN:
                 // std::cout << "JUMPING TO --> SEND_DATA_PACKET " << std::endl;
                 // std::cout << std::endl;
                 packet_ack_flg = 'p';
-                time_calc_flg = 'y';
+                time_calc_flg = 'n';
                 std::cout << "setting packet_ack_flg --> " << packet_ack_flg << std::endl;
                 std::cout << std::endl;
 
@@ -432,15 +432,18 @@ LISTEN_AGAIN:
                 // nextseqnum += base;
                 if (time_calc_flg == 'y') {
                     // calculate estimated time
-                    //
+
                     std::cout << "STOPPING TIMER ON PACKET --> " << packet_ack_no << std::endl;
-                    auto finish = std::chrono::high_resolution_clock::now();
-                    std::chrono::duration<double> elapsed = finish - start;
-                    long long microseconds =
-                        std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
-                    std::cout << "microseconds --> " << microseconds << std::endl;
-                    calc_timeout(microseconds, &estimatedRTT, &deviationRTT, &timeout_value1);
-                    std::cout << "NEW TIME --> " << timeout_value1 << std::endl;
+                    finish = std::chrono::high_resolution_clock::now();
+                    long long elapsed_micro =
+                        std::chrono::duration_cast<std::chrono::microseconds>(finish - start)
+                            .count();
+                    std::cout << "elapsed_micro --> " << elapsed_micro << std::endl;
+                    if (estimatedRTT == 0) {
+                        estimatedRTT = elapsed_micro;
+                    }
+                    calc_timeout(elapsed_micro, estimatedRTT, deviationRTT, timeout_value);
+                    std::cout << "NEW TIME --> " << timeout_value << std::endl;
                     time_calc_flg = 'n';
                 }
                 std::cout << std::endl;
@@ -534,41 +537,33 @@ void number_to_char(char *p_char, unsigned short p_short_num, unsigned int p_seq
 }
 // -----------------------------------------------------------------------
 
-void calc_timeout(long sampleRTT, long *estimatedRTT, unsigned long *deviationRTT,
-                  unsigned long *timeout_value) {
-    std::cout << "estimatedRTT --> " << *estimatedRTT << std::endl;
-    std::cout << "deviationRTT --> " << *deviationRTT << std::endl;
-    std::cout << "timeout_value  --> " << *timeout_value << std::endl;
-    std::cout << std::endl;
+void calc_timeout(long sampleRTT, long long &estimatedRTT, int &deviationRTT,
+                  long long &timeout_value) {
+    // std::cout << "estimatedRTT --> " << estimatedRTT << std::endl;
+    // std::cout << "deviationRTT --> " << deviationRTT << std::endl;
+    // std::cout << "timeout_value  --> " << timeout_value << std::endl;
+    // std::cout << std::endl;
 
-    std::cout << "CALCULATION :: " << std::endl;
+    // std::cout << "CALCULATION :: " << std::endl;
 
-    *estimatedRTT = 0.875 * (*estimatedRTT) + 0.125 * sampleRTT;
-    std::cout << "estimatedRTT --> " << *estimatedRTT << std::endl;
-    *deviationRTT = 0.75 * (*deviationRTT) + 0.25 * ((*estimatedRTT) - sampleRTT);
-    std::cout << "deviationRTT --> " << *deviationRTT << std::endl;
-    *timeout_value = (*timeout_value) + 4 * (*deviationRTT);
-    std::cout << "timeout_value  --> " << *timeout_value << std::endl;
-    // std::cout << "estimatedRTT --> " << *estimatedRTT  << std::endl;
-    // std::cout << "deviationRTT --> " << *deviationRTT  << std::endl;
-    // std::cout << "timeout_value  --> " << *timeout_value << std::endl;
-    //
-    // sampleRTT -= (*estimatedRTT>>3);
-    //
-    // std::cout << "sampleRTT --> " << sampleRTT  << std::endl;
-    //
-    // std::cout << "estimatedRTT --> " << *estimatedRTT  << std::endl;
-    // *estimatedRTT += sampleRTT;
-    //
-    // if(sampleRTT < 0) {
-    //
-    //     sampleRTT = -sampleRTT;
-
-    // }
-    //
-    // sampleRTT -= (*deviationRTT >> 3);
-    //
-    // *deviationRTT += sampleRTT;
-    // *timeout_value = (*estimatedRTT >> 3) + (*deviationRTT >> 1);
-    std::cout << "NEW TIMEOUT --> " << *timeout_value << std::endl;
+    // estimatedRTT = 0.875 * (estimatedRTT) + 0.125 * sampleRTT;
+    // std::cout << "estimatedRTT --> " << estimatedRTT << std::endl;
+    // deviationRTT = 0.75 * (deviationRTT) + 0.25 * (estimatedRTT - sampleRTT);
+    // std::cout << "deviationRTT --> " << deviationRTT << std::endl;
+    // timeout_value = (timeout_value) + 4 * (deviationRTT);
+    // std::cout << "timeout_value  --> " << timeout_value << std::endl;
+    std::cout << "estimatedRTT --> " << estimatedRTT << std::endl;
+    std::cout << "deviationRTT --> " << deviationRTT << std::endl;
+    std::cout << "timeout_value  --> " << timeout_value << std::endl;
+    if (sampleRTT != estimatedRTT) {
+        sampleRTT -= (estimatedRTT >> 3);
+    }
+    estimatedRTT += sampleRTT;
+    if (sampleRTT < 0) {
+        sampleRTT = -sampleRTT;
+    }
+    sampleRTT -= (deviationRTT >> 3);
+    deviationRTT += sampleRTT;
+    timeout_value = (estimatedRTT >> 3) + (deviationRTT >> 1);
+    std::cout << "NEW TIMEOUT --> " << timeout_value << std::endl;
 }
