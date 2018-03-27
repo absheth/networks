@@ -19,6 +19,7 @@
 #include <iostream>
 #include <list>
 #include <sstream>
+#include <cstdio>
 // -----------------------------------------------------------------------
 // CONSTANTS
 #define PACKET_SIZE 1472
@@ -59,6 +60,8 @@ int write_data_to_file(char *p_received_data, int p_data_length, unsigned int p_
 
 // -----------------------------------------------------------------------
 // MAIN_METHOD
+//
+std::string working_directory;
 int main(int argc, char const *argv[]) {
     // std::cout << "AKASH SHETH - CLIENT" << std::endl;
     // std::cout << std::endl;
@@ -70,14 +73,31 @@ int main(int argc, char const *argv[]) {
     struct hostent *server;
     // -----------------------------------------------------------------------
     // std::cout << "argc --> " << argc << std::endl;
-    if (argc != 4) {
-        // std::cout << "USAGE: ./client_udp hostname port dropping_prob" << std::endl;
+    if (argc != 5) {
+        std::cout << "USAGE: ./client_udp hostname port dropping_prob sleep_in_microseconds" << std::endl;
         exit(0);
     }
 
     std::string server_host = argv[1];
     int server_port = atoi(argv[2]);
     int dropping_prob = atoi(argv[3]);
+    useconds_t ip_sleep = atoi(argv[4]);
+    working_directory = getenv("PWD");
+    std::string removefile = working_directory+"/test.txt";
+    std::remove(removefile.c_str());
+    // while(1){
+    //     std::cout << "SLEEPING FOR --> " << ip_sleep << " MICROSECONDS. " << std::endl;
+    //     usleep(ip_sleep);
+    // }
+    // exit(0);
+    // if(std::remove(removefile.c_str())){
+    //     std::cout << "FILE REMOVED SUCCESSFULLY." << std::endl;
+    //     
+    // } else {
+    // 
+    //     std::cout << "FILE NOT REMOVED." << std::endl;
+    // }
+    // exit(0);
     // std::cout << "server --> " << server_host << std::endl;
     // std::cout << "server host  --> " << server_port << std::endl;
     // std::cout << "dropping_prob --> " << dropping_prob << std::endl;
@@ -249,7 +269,8 @@ int main(int argc, char const *argv[]) {
         packet_ack_no = char_to_int(receive_buffer, 8);
         // memset(receive_buffer, 0, PACKET_SIZE);
         // std::cout << std::endl;
-        // std::cout << "**************************************************************" << std::endl;
+        // std::cout << "**************************************************************" <<
+        // std::endl;
 
         // std::cout << "RECEIVED :: received_bytes --> " << bytes_received << std::endl;
         // // std::cout << "RECEIVED :: packet_padding --> " << packet_padding << std::endl;
@@ -258,9 +279,9 @@ int main(int argc, char const *argv[]) {
         // std::cout << "RECEIVED :: packet_seq_no  --> " << packet_seq_no << std::endl;
         // std::cout << "RECEIVED :: packet_ack_no  --> " << packet_ack_no << std::endl;
 
-        // std::cout << "**************************************************************" << std::endl;
-        // std::cout << std::endl;
-
+        // std::cout << "**************************************************************" <<
+        // std::endl; std::cout << std::endl;
+        usleep(ip_sleep);
         if (1) {
             random = std::rand() % 100 + 1;
             // std::cout << "RANDOM --> " << random << std::endl;
@@ -332,13 +353,15 @@ int main(int argc, char const *argv[]) {
         memset(send_ack_packet, 0, PACKET_SIZE);
         if (!first_packet) {
             if (file_request_count++ == 30) {
-                // std::cout << "FILE REQUESTED TOO MANY TIMES -- " << file_request_count << std::endl;
+                // std::cout << "FILE REQUESTED TOO MANY TIMES -- " << file_request_count <<
+                // std::endl;
                 exit(0);
             }
             memcpy(send_ack_packet, file_request, sizeof(file_request));
 
             // std::cout << "NO DATA FROM SERVER" << std::endl;
-            // std::cout << "SENDING REQUEST AGAIN --> " << send_ack_packet + HEADER_SIZE << std::endl;
+            // std::cout << "SENDING REQUEST AGAIN --> " << send_ack_packet + HEADER_SIZE <<
+            // std::endl;
         } else {
             send_ack_packet[0] = packet_padding;
             send_ack_packet[1] = packet_ack_flg;
@@ -351,8 +374,9 @@ int main(int argc, char const *argv[]) {
         // std::cout << std::endl;
         // std::cout << "+++++++++++++++++++++++++++++++++++++++++++++++++++++++" << std::endl;
         // std::cout << "AFTER SENDING :: ack_sendto_value --> " << ack_sendto_value << std::endl;
-        // // std::cout << "AFTER SENDING :: padding          --> " << send_ack_packet[0] << std::endl;
-        // std::cout << "AFTER SENDING :: packet_ack_flg   --> " << send_ack_packet[1] << std::endl;
+        // // std::cout << "AFTER SENDING :: padding          --> " << send_ack_packet[0] <<
+        // std::endl; std::cout << "AFTER SENDING :: packet_ack_flg   --> " << send_ack_packet[1] <<
+        // std::endl;
         // // std::cout << "AFTER SENDING :: advertised_window   --> " << advertised_window <<
         // std::endl;
         // std::cout << "AFTER SENDING :: sequence number  --> " << packet_seq_no << std::endl;
@@ -451,8 +475,9 @@ int write_data_to_file(char *p_received_data, int p_data_length, unsigned int p_
     //  // std::cout << "******************************************************" << std::endl;
     //  // std::cout << std::endl;
 
-    char filename[] = "/Users/absheth/course/2-networks/reliable_udp/outputs/test.txt";
+    // char filename[] = "/Users/absheth/course/2-networks/reliable_udp/outputs/test.txt";
     // char filename[] = "/u/absheth/networks/reliable_udp/output/test.txt";
+    std::string filename = working_directory+"/test.txt";
     int l_return = SUCCESS;
     std::ofstream outputfile;
 
@@ -495,7 +520,7 @@ int write_data_to_file(char *p_received_data, int p_data_length, unsigned int p_
     // std::cout << std::endl;
     // std::cout << "******************************************************" << std::endl;
     // std::cout << " Writing data :: Length --> " << p_data_length << " | Packet --> "
-              //<< p_packet_number << "    ===>>> SUCCESS " << std::endl;
+    //<< p_packet_number << "    ===>>> SUCCESS " << std::endl;
     // std::cout << "******************************************************" << std::endl;
     // std::cout << std::endl;
 

@@ -79,7 +79,17 @@ int advertised_window;
 int main(int argc, char const *argv[]) {
     std::cout << "AKASH SHETH - SERVER" << std::endl;
     std::cout << "argc --> " << argc << '\n';
-    // advertised_window = argv[1];
+    if(argc != 2) {
+        std::cout << "USAGE: ./server_udp advertised_window_in_bytes" << std::endl;
+        exit(0);
+    }
+    int x = atoi(argv[1])/DATA_SIZE;
+    if (x == 0) {
+        advertised_window = 1;
+    } else {
+        advertised_window = x+1;
+    }
+    // std::cout << "WINDOW --> " << advertised_window << std::endl;
     std::string working_directory = getenv("PWD");
     std::cout << "working_directory --> " << working_directory << '\n';
     // window_size = 9;
@@ -222,7 +232,7 @@ LISTEN_AGAIN:
 
         base = start_index;
         nextseqnum = start_index;
-        advertised_window = 9;  // Make it dynamic. Command-line arugment
+        // advertised_window = 9;  // Make it dynamic. Command-line arugment
         packet_padding = '-';
         packet_ack_flg = 'p';
         packet_seq_no = base;
@@ -440,7 +450,7 @@ LISTEN_AGAIN:
             // EXTRACTION
             packet_padding = receive_buffer[0];
             packet_ack_flg = receive_buffer[1];
-            advertised_window = char_to_short(receive_buffer, 2);
+            // advertised_window = char_to_short(receive_buffer, 2);
             packet_seq_no = char_to_int(receive_buffer, 4);
             packet_ack_no = char_to_int(receive_buffer, 8);
 
@@ -690,8 +700,6 @@ unsigned short char_to_short(char *p_charstream, int p_offset) {
 /* Convert unsigned into char array of 4 bytes */
 void number_to_char(char *p_char, unsigned short p_short_num, unsigned int p_seqnum,
                     unsigned int p_ackno, int p_offset) {
-    // converting receive_window
-    // std::cout << "p_short_num --> " << p_short_num << std::endl;
 
     p_char[p_offset + 0] = (p_short_num >> 8) & 0xFF;
     p_char[p_offset + 1] = p_short_num & 0xFF;
@@ -712,19 +720,6 @@ void number_to_char(char *p_char, unsigned short p_short_num, unsigned int p_seq
 
 void calc_timeout(long sampleRTT, long long &estimatedRTT, int &deviationRTT,
                   long long &timeout_value) {
-    // std::cout << "estimatedRTT --> " << estimatedRTT << std::endl;
-    // std::cout << "deviationRTT --> " << deviationRTT << std::endl;
-    // std::cout << "timeout_value  --> " << timeout_value << std::endl;
-    // std::cout << std::endl;
-
-    // std::cout << "CALCULATION :: " << std::endl;
-
-    // estimatedRTT = 0.875 * (estimatedRTT) + 0.125 * sampleRTT;
-    // std::cout << "estimatedRTT --> " << estimatedRTT << std::endl;
-    // deviationRTT = 0.75 * (deviationRTT) + 0.25 * (estimatedRTT - sampleRTT);
-    // std::cout << "deviationRTT --> " << deviationRTT << std::endl;
-    // timeout_value = (timeout_value) + 4 * (deviationRTT);
-    // std::cout << "timeout_value  --> " << timeout_value << std::endl;
     std::cout << "estimatedRTT --> " << estimatedRTT << std::endl;
     std::cout << "deviationRTT --> " << deviationRTT << std::endl;
     std::cout << "timeout_value  --> " << timeout_value << std::endl;
