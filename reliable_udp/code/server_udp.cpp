@@ -590,7 +590,6 @@ LISTEN_AGAIN:
                         congestion++;
                         current_state = CONGESTION_AVOID;
                     } else {
-                        slowstart++;
                         std::cout << std::endl;
                         std::cout << "========================================" << std::endl;
                         std::cout << "INITIAL CONGESTION WINDOW --> " << congestion_window

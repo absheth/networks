@@ -1,0 +1,592 @@
+AKASH SHETH - SERVER
+argc --> 1
+working_directory --> /Users/absheth/course/2-networks/reliable_udp/code
+Server started. Waiting for the connection.
+
+
+SERVING NOW.. Waiting for the request. 
+
+BYTES READ --> 1472
+
+REQUEST :: VALID
+REQUEST :: file --> 1mb.txt
+Advertised window --> 9
+TOTAL PACKETS --> 749
+
+~~~~~~~~ FILE SENDING :: START ~~~~~~~~
+
+-- INITIAL DETAILS --
+INITIAL :: packet_padding     --> -
+INITIAL :: packet_ack_flg     --> p
+INITIAL :: advertised_window  --> 9
+INITIAL :: packet_seq_no      --> 0
+INITIAL :: packet_ack_no      --> 0
+-- INITIAL DETAILS --
+
+PACKET SENT :: Packet --> 0
+AFTER SENDING :: nextseqnum --> 0
+
+#########################################################################
+ -- 
+CURRENT STATE --> 0
+ -- 
+
+** WAITING FOR ACK --> 0
+
+******************************************************
+TOTAL PACKETS --> 749
+RECEIVED :: packet_ack_no --> 0
+
+ssthresh --> 43
+
+========================================
+INITIAL CONGESTION WINDOW --> 1
+----------------------------------------
+FINAL CONGESTION WINDOW --> 2
+========================================
+
+
+----------------------
+UPDATED :: base --> 1
+UPDATED :: nextseqnum --> 1
+----------------------
+
+----------------------FROM VALID ACK----------------------
+nextseqnum less than total_packets
+JUMPING TO SEND_DATA_PACKET
+
+PACKET SENT :: Packet --> 1
+PACKET SENT :: Packet --> 2
+AFTER SENDING :: nextseqnum --> 2
+
+#########################################################################
+ -- 
+CURRENT STATE --> 0
+ -- 
+
+** WAITING FOR ACK --> 1
+
+******************************************************
+TOTAL PACKETS --> 749
+RECEIVED :: packet_ack_no --> 0
+
+ACK ALREADY RECEIVED :: packet_ack_no --> 0
+
+#########################################################################
+ -- 
+CURRENT STATE --> 0
+ -- 
+
+** WAITING FOR ACK --> 1
+
+******************************************************
+TOTAL PACKETS --> 749
+RECEIVED :: packet_ack_no --> 0
+
+ACK ALREADY RECEIVED :: packet_ack_no --> 0
+
+#########################################################################
+ -- 
+CURRENT STATE --> 0
+ -- 
+
+** WAITING FOR ACK --> 1
+
+******************************************************
+TOTAL PACKETS --> 749
+RECEIVED :: packet_ack_no --> 0
+
+ACK ALREADY RECEIVED :: packet_ack_no --> 0
+
+#########################################################################
+ -- 
+CURRENT STATE --> 0
+ -- 
+
+** WAITING FOR ACK --> 1
+
+******************************************************
+TOTAL PACKETS --> 749
+RECEIVED :: packet_ack_no --> 0
+
+ACK ALREADY RECEIVED :: packet_ack_no --> 0
+
+#########################################################################
+ -- 
+CURRENT STATE --> 0
+ -- 
+
+** WAITING FOR ACK --> 1
+
+******************************************************
+TOTAL PACKETS --> 749
+RECEIVED :: packet_ack_no --> 0
+
+ACK ALREADY RECEIVED :: packet_ack_no --> 0
+
+#########################################################################
+ -- 
+CURRENT STATE --> 0
+ -- 
+
+** WAITING FOR ACK --> 1
+
+******************************************************
+TOTAL PACKETS --> 749
+RECEIVED :: packet_ack_no --> 0
+
+ACK ALREADY RECEIVED :: packet_ack_no --> 0
+
+#########################################################################
+ -- 
+CURRENT STATE --> 0
+ -- 
+
+** WAITING FOR ACK --> 1
+
+******************************************************
+TOTAL PACKETS --> 749
+RECEIVED :: packet_ack_no --> 0
+
+ACK ALREADY RECEIVED :: packet_ack_no --> 0
+
+#########################################################################
+ -- 
+CURRENT STATE --> 0
+ -- 
+
+** WAITING FOR ACK --> 1
+
+******************************************************
+TOTAL PACKETS --> 749
+RECEIVED :: packet_ack_no --> 0
+
+ACK ALREADY RECEIVED :: packet_ack_no --> 0
+
+#########################################################################
+ -- 
+CURRENT STATE --> 0
+ -- 
+
+** WAITING FOR ACK --> 1
+
+******************************************************
+TOTAL PACKETS --> 749
+RECEIVED :: packet_ack_no --> 0
+
+ACK ALREADY RECEIVED :: packet_ack_no --> 0
+
+#########################################################################
+ -- 
+CURRENT STATE --> 0
+ -- 
+
+** WAITING FOR ACK --> 1
+
+******************************************************
+TOTAL PACKETS --> 749
+RECEIVED :: packet_ack_no --> 0
+
+ACK ALREADY RECEIVED :: packet_ack_no --> 0
+
+#########################################################################
+ -- 
+CURRENT STATE --> 0
+ -- 
+
+** WAITING FOR ACK --> 1
+
+******************************************************
+TOTAL PACKETS --> 749
+RECEIVED :: packet_ack_no --> 0
+
+ACK ALREADY RECEIVED :: packet_ack_no --> 0
+
+#########################################################################
+ -- 
+CURRENT STATE --> 0
+ -- 
+
+** WAITING FOR ACK --> 1
+
+******************************************************
+TOTAL PACKETS --> 749
+RECEIVED :: packet_ack_no --> 0
+
+ACK ALREADY RECEIVED :: packet_ack_no --> 0
+
+#########################################################################
+ -- 
+CURRENT STATE --> 0
+ -- 
+
+** WAITING FOR ACK --> 1
+
+******************************************************
+TOTAL PACKETS --> 749
+RECEIVED :: packet_ack_no --> 0
+
+ACK ALREADY RECEIVED :: packet_ack_no --> 0
+
+#########################################################################
+ -- 
+CURRENT STATE --> 0
+ -- 
+
+** WAITING FOR ACK --> 1
+
+******************************************************
+TOTAL PACKETS --> 749
+RECEIVED :: packet_ack_no --> 0
+
+ACK ALREADY RECEIVED :: packet_ack_no --> 0
+
+#########################################################################
+ -- 
+CURRENT STATE --> 0
+ -- 
+
+** WAITING FOR ACK --> 1
+
+******************************************************
+TOTAL PACKETS --> 749
+RECEIVED :: packet_ack_no --> 0
+
+ACK ALREADY RECEIVED :: packet_ack_no --> 0
+
+#########################################################################
+ -- 
+CURRENT STATE --> 0
+ -- 
+
+** WAITING FOR ACK --> 1
+
+******************************************************
+TOTAL PACKETS --> 749
+RECEIVED :: packet_ack_no --> 0
+
+ACK ALREADY RECEIVED :: packet_ack_no --> 0
+
+#########################################################################
+ -- 
+CURRENT STATE --> 0
+ -- 
+
+** WAITING FOR ACK --> 1
+
+******************************************************
+TOTAL PACKETS --> 749
+RECEIVED :: packet_ack_no --> 0
+
+ACK ALREADY RECEIVED :: packet_ack_no --> 0
+
+#########################################################################
+ -- 
+CURRENT STATE --> 0
+ -- 
+
+** WAITING FOR ACK --> 1
+
+******************************************************
+TOTAL PACKETS --> 749
+RECEIVED :: packet_ack_no --> 0
+
+ACK ALREADY RECEIVED :: packet_ack_no --> 0
+
+#########################################################################
+ -- 
+CURRENT STATE --> 0
+ -- 
+
+** WAITING FOR ACK --> 1
+
+******************************************************
+TOTAL PACKETS --> 749
+RECEIVED :: packet_ack_no --> 0
+
+ACK ALREADY RECEIVED :: packet_ack_no --> 0
+
+#########################################################################
+ -- 
+CURRENT STATE --> 0
+ -- 
+
+** WAITING FOR ACK --> 1
+
+******************************************************
+TOTAL PACKETS --> 749
+RECEIVED :: packet_ack_no --> 0
+
+ACK ALREADY RECEIVED :: packet_ack_no --> 0
+
+#########################################################################
+ -- 
+CURRENT STATE --> 0
+ -- 
+
+** WAITING FOR ACK --> 1
+
+******************************************************
+TOTAL PACKETS --> 749
+RECEIVED :: packet_ack_no --> 0
+
+ACK ALREADY RECEIVED :: packet_ack_no --> 0
+
+#########################################################################
+ -- 
+CURRENT STATE --> 0
+ -- 
+
+** WAITING FOR ACK --> 1
+
+******************************************************
+TOTAL PACKETS --> 749
+RECEIVED :: packet_ack_no --> 0
+
+ACK ALREADY RECEIVED :: packet_ack_no --> 0
+
+#########################################################################
+ -- 
+CURRENT STATE --> 0
+ -- 
+
+** WAITING FOR ACK --> 1
+
+******************************************************
+TOTAL PACKETS --> 749
+RECEIVED :: packet_ack_no --> 0
+
+ACK ALREADY RECEIVED :: packet_ack_no --> 0
+
+#########################################################################
+ -- 
+CURRENT STATE --> 0
+ -- 
+
+** WAITING FOR ACK --> 1
+
+******************************************************
+TOTAL PACKETS --> 749
+RECEIVED :: packet_ack_no --> 0
+
+ACK ALREADY RECEIVED :: packet_ack_no --> 0
+
+#########################################################################
+ -- 
+CURRENT STATE --> 0
+ -- 
+
+** WAITING FOR ACK --> 1
+
+******************************************************
+TOTAL PACKETS --> 749
+RECEIVED :: packet_ack_no --> 0
+
+ACK ALREADY RECEIVED :: packet_ack_no --> 0
+
+#########################################################################
+ -- 
+CURRENT STATE --> 0
+ -- 
+
+** WAITING FOR ACK --> 1
+
+******************************************************
+TOTAL PACKETS --> 749
+RECEIVED :: packet_ack_no --> 0
+
+ACK ALREADY RECEIVED :: packet_ack_no --> 0
+
+#########################################################################
+ -- 
+CURRENT STATE --> 0
+ -- 
+
+** WAITING FOR ACK --> 1
+
+******************************************************
+TOTAL PACKETS --> 749
+RECEIVED :: packet_ack_no --> 0
+
+ACK ALREADY RECEIVED :: packet_ack_no --> 0
+
+#########################################################################
+ -- 
+CURRENT STATE --> 0
+ -- 
+
+** WAITING FOR ACK --> 1
+
+******************************************************
+TOTAL PACKETS --> 749
+RECEIVED :: packet_ack_no --> 0
+
+ACK ALREADY RECEIVED :: packet_ack_no --> 0
+
+#########################################################################
+ -- 
+CURRENT STATE --> 0
+ -- 
+
+** WAITING FOR ACK --> 1
+
+******************************************************
+TOTAL PACKETS --> 749
+RECEIVED :: packet_ack_no --> 0
+
+ACK ALREADY RECEIVED :: packet_ack_no --> 0
+
+#########################################################################
+ -- 
+CURRENT STATE --> 0
+ -- 
+
+** WAITING FOR ACK --> 1
+
+******************************************************
+TOTAL PACKETS --> 749
+RECEIVED :: packet_ack_no --> 0
+
+ACK ALREADY RECEIVED :: packet_ack_no --> 0
+
+#########################################################################
+ -- 
+CURRENT STATE --> 0
+ -- 
+
+** WAITING FOR ACK --> 1
+
+******************************************************
+TOTAL PACKETS --> 749
+RECEIVED :: packet_ack_no --> 0
+
+ACK ALREADY RECEIVED :: packet_ack_no --> 0
+
+#########################################################################
+ -- 
+CURRENT STATE --> 0
+ -- 
+
+** WAITING FOR ACK --> 1
+
+******************************************************
+TOTAL PACKETS --> 749
+RECEIVED :: packet_ack_no --> 0
+
+ACK ALREADY RECEIVED :: packet_ack_no --> 0
+
+#########################################################################
+ -- 
+CURRENT STATE --> 0
+ -- 
+
+** WAITING FOR ACK --> 1
+
+******************************************************
+TOTAL PACKETS --> 749
+RECEIVED :: packet_ack_no --> 0
+
+ACK ALREADY RECEIVED :: packet_ack_no --> 0
+
+#########################################################################
+ -- 
+CURRENT STATE --> 0
+ -- 
+
+** WAITING FOR ACK --> 1
+
+******************************************************
+TOTAL PACKETS --> 749
+RECEIVED :: packet_ack_no --> 0
+
+ACK ALREADY RECEIVED :: packet_ack_no --> 0
+
+#########################################################################
+ -- 
+CURRENT STATE --> 0
+ -- 
+
+** WAITING FOR ACK --> 1
+
+******************************************************
+TOTAL PACKETS --> 749
+RECEIVED :: packet_ack_no --> 0
+
+ACK ALREADY RECEIVED :: packet_ack_no --> 0
+
+#########################################################################
+ -- 
+CURRENT STATE --> 0
+ -- 
+
+** WAITING FOR ACK --> 1
+
+******************************************************
+TOTAL PACKETS --> 749
+RECEIVED :: packet_ack_no --> 0
+
+ACK ALREADY RECEIVED :: packet_ack_no --> 0
+
+#########################################################################
+ -- 
+CURRENT STATE --> 0
+ -- 
+
+** WAITING FOR ACK --> 1
+
+******************************************************
+TOTAL PACKETS --> 749
+RECEIVED :: packet_ack_no --> 0
+
+ACK ALREADY RECEIVED :: packet_ack_no --> 0
+
+#########################################################################
+ -- 
+CURRENT STATE --> 0
+ -- 
+
+** WAITING FOR ACK --> 1
+SERVER ENTERING -- SLOW START
+----------------FROM TIMEOUT----------------
+PACKET SENT :: Packet --> 1
+AFTER SENDING :: nextseqnum --> 1
+
+#########################################################################
+ -- 
+CURRENT STATE --> 0
+ -- 
+
+** WAITING FOR ACK --> 1
+SERVER ENTERING -- SLOW START
+----------------FROM TIMEOUT----------------
+PACKET SENT :: Packet --> 1
+AFTER SENDING :: nextseqnum --> 1
+
+#########################################################################
+ -- 
+CURRENT STATE --> 0
+ -- 
+
+** WAITING FOR ACK --> 1
+SERVER ENTERING -- SLOW START
+----------------FROM TIMEOUT----------------
+PACKET SENT :: Packet --> 1
+AFTER SENDING :: nextseqnum --> 1
+
+#########################################################################
+ -- 
+CURRENT STATE --> 0
+ -- 
+
+** WAITING FOR ACK --> 1
+SERVER ENTERING -- SLOW START
+----------------FROM TIMEOUT----------------
+PACKET SENT :: Packet --> 1
+AFTER SENDING :: nextseqnum --> 1
+
+#########################################################################
+ -- 
+CURRENT STATE --> 0
+ -- 
+
+** WAITING FOR ACK --> 1
