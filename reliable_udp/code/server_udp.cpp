@@ -14,11 +14,11 @@
 #include <time.h>
 #include <unistd.h>
 #include <algorithm>
+#include <chrono>
 #include <fstream>
 #include <iostream>
 #include <list>
 #include <sstream>
-#include <chrono>
 
 // -----------------------------------------------------------------------
 // CONSTANTS
@@ -35,6 +35,8 @@ struct pkt {
     char ack_flg;
     char *load;
 };
+
+enum state { SLOW_START, CONGESTION_AVOID, FAST_RECOVERY };
 
 // -----------------------------------------------------------------------
 
@@ -114,12 +116,13 @@ void service_request(int p_listen_socket) {
     unsigned int start_index = 0;
 
     // int total_packets_sent = 0;
-    unsigned int base = 0;  // Last acknowledged packet/sequence number.
-                            // server_waiting_on
-    // unsigned int nextseqnum;  // Increment when new sending new packet.
+    unsigned int base = 0;    // Last acknowledged packet/sequence number.
+                              // server_waiting_on
+    unsigned int nextseqnum;  // Increment when new sending new packet.
     auto start = std::chrono::high_resolution_clock::now();
     auto finish = std::chrono::high_resolution_clock::now();
-    int congestion_window;
+    int congestion_window = 1;
+    int sending_window = 0;
     // -----------------------------
 LISTEN_AGAIN:
 
@@ -163,22 +166,30 @@ LISTEN_AGAIN:
     int sendsize;
     int datasize;
     long long timeout_value;
-    unsigned long timeout_value1;
     char time_calc_flg;
     long sampleRTT;
     long long estimatedRTT;
     int deviationRTT;
+    int phase;
+    state current_state;
+    unsigned int send_from;
+    int from_timeout;
+    int ssthresh;
+    int duplicate_ack;
+    int slowstart;
+    int congestion;
+    int fastrecovery;
+    int last_packet;
     std::cout << std::endl;
     std::cout << "REQUEST :: VALID" << std::endl;
     std::cout << "REQUEST :: file --> " << receive_buffer + HEADER_SIZE << std::endl;
-    int last_packet;
     if (!request_error) {
         file_descriptor = fopen(receive_buffer + HEADER_SIZE, "rb");
         if (file_descriptor == NULL) {
             total_packets = 1;
             packet_ack_flg = 'n';
             base = 0;
-            advertised_window = 2;
+            congestion_window = 2;
             // std::cout << " TOTAL PACKETS --> " << total_packets<< std::endl;
             // std::cout << " PACKET ACK FLAG --> " << packet_ack_flg << std::endl;
             // std::cout << " BASE --> "  << base << std::endl;
@@ -210,6 +221,7 @@ LISTEN_AGAIN:
         // INITIALIZATION
 
         base = start_index;
+        nextseqnum = start_index;
         advertised_window = 9;  // Make it dynamic. Command-line arugment
         packet_padding = '-';
         packet_ack_flg = 'p';
@@ -218,15 +230,20 @@ LISTEN_AGAIN:
         total_packets = fsize / DATA_SIZE + ((fsize % DATA_SIZE == 0 ? 0 : 1));
         sendto_value = 0;
         send_index = 0;
-        // nextseqnum = 0;
         sendsize = 0;
         datasize = 0;
-        timeout_value = 100;
-        timeout_value1 = 0;
+        timeout_value = 2000000;
         time_calc_flg = 'n';
         estimatedRTT = 0;
         deviationRTT = 1;
         last_packet = 0;
+        current_state = SLOW_START;
+        from_timeout = 0;
+        ssthresh = 64000 / DATA_SIZE;
+        duplicate_ack = 0;
+        slowstart = 1;
+        congestion = 0;
+        fastrecovery = 0;
         std::cout << "Advertised window --> " << advertised_window << std::endl;
         std::cout << "TOTAL PACKETS --> " << total_packets << std::endl;
 
@@ -250,13 +267,12 @@ LISTEN_AGAIN:
         //                                                      advertised_window);
 
         while (1) {
-            // if (nextseqnum == total_packets && base == nextseqnum) {
         OUTER:
             if (last_packet == total_packets) {
                 // SET TO INITIAL VALUES FOR SERVING AGAIN.
                 //
                 base = 0;
-                // nextseqnum = 0;
+                nextseqnum = 0;
                 send_index = 0;
                 sendsize = 0;
                 sendto_value = 0;
@@ -264,31 +280,44 @@ LISTEN_AGAIN:
                 if (packet_ack_flg != 'n') {
                     std::free(file);
                 }
+                std::cout << std::endl;
+                
+                std::cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
+                std::cout << "Slow start count --> " << slowstart << std::endl;
+                std::cout << "Congestion avoidance count --> " << congestion << std::endl;
+                std::cout << "Fast recovery count --> " << fastrecovery << std::endl;
+                
+                std::cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
+                
+                std::cout << std::endl;
+
                 break;
             }
 
         SEND_DATA_PACKET:
 
             int send_count = 0;
-            while (send_count < advertised_window) {
-                // std::cout << "HERE" << std::endl;
-
-                send_index = base + send_count++;
+            // calculate sending window
+            sending_window = congestion_window;
+            // SENDING INDEX CHANGE
+            while (send_count < sending_window) {
+                if (from_timeout) {
+                    send_index = base + send_count++;
+                } else {
+                    send_index = nextseqnum + send_count++;
+                }
                 if (send_index == total_packets) {
                     std::cout << std::endl;
                     std::cout << "###### ALL PACKETS SENT ######" << std::endl;
-                    
+
                     // base = send_index;
-                    // std::cout << "Setting nextseqnum --> " << nextseqnum << std::endl;
                     std::cout << "<< NOT SENDING ANYMORE >>" << std::endl;
                     if (packet_ack_flg == 'n') {
-                       last_packet = total_packets; 
+                        last_packet = total_packets;
                         goto OUTER;
                     }
                     std::cout << "JUMP TO :: RECEIVE " << std::endl;
-
-                    std::cout << "###### ALL PACKETS SENT ######" << std::endl;
-
+                    //  std::cout << "###### ALL PACKETS SENT ######" << std::endl;
                     goto RECEIVE;
                 }
                 // std::cout << "SENDING DATA FOR PACKET --> " << send_index << std::endl;
@@ -316,9 +345,11 @@ LISTEN_AGAIN:
                 }
                 // std::cout << "SENDING --> " << (packet+HEADER_SIZE) << std::endl;
                 if (time_calc_flg == 'n' && packet_ack_flg != 'n') {
-                    start = std::chrono::high_resolution_clock::now();
-                    // std::cout << " SETTING TIMER ON PACKET --> " << send_index << std::endl;
-                    time_calc_flg = 'y';
+                    if (send_count == sending_window - 1 && packet_ack_flg != 'x') {
+                        start = std::chrono::high_resolution_clock::now();
+                        // std::cout << " SETTING TIMER ON PACKET --> " << send_index << std::endl;
+                        time_calc_flg = 'y';
+                    }
                 }
                 sendto_value = sendto(p_listen_socket, packet, sendsize, 0,
                                       (struct sockaddr *)&clientaddr, clientlen);
@@ -332,9 +363,20 @@ LISTEN_AGAIN:
                 // exit(0);
                 std::cout << "PACKET SENT :: Packet --> " << send_index << std::endl;
             }
-            // nextseqnum = base + send_count;
+
+            nextseqnum = base + send_count;
+            std::cout << "AFTER SENDING :: nextseqnum --> " << nextseqnum << std::endl;
+            std::cout << std::endl;
 
         RECEIVE:
+            std::cout << "#########################################################################"
+                      << std::endl;
+            std::cout << " -- " << std::endl;
+
+            std::cout << "CURRENT STATE --> " << current_state << std::endl;
+
+            std::cout << " -- " << std::endl;
+
             std::cout << std::endl;
             std::cout << "** WAITING FOR ACK --> " << base << std::endl;
             memset(receive_buffer, 0, PACKET_SIZE);
@@ -363,6 +405,11 @@ LISTEN_AGAIN:
                 perror("~~~~~ TIMER :: ERROR IN SELECT ~~~~~");
                 exit(0);
             } else if (rval == 0) {
+                std::cout << "SERVER ENTERING -- SLOW START" << std::endl;
+                current_state = SLOW_START;
+                ssthresh = congestion_window / 2;
+                congestion_window = 1;
+               duplicate_ack = 0; 
                 // TIMEOUT
                 //
                 // ALWAYS SEND PACKETS ON TIME OUT
@@ -374,7 +421,9 @@ LISTEN_AGAIN:
                 time_calc_flg = 'n';
                 // std::cout << "setting packet_ack_flg --> " << packet_ack_flg << std::endl;
                 // std::cout << std::endl;
+                std::cout << "----------------FROM TIMEOUT----------------" << std::endl;
 
+                from_timeout = 1;
                 goto SEND_DATA_PACKET;
             } else {
                 // Data available to read. READ IT.
@@ -397,41 +446,151 @@ LISTEN_AGAIN:
 
             std::cout << std::endl;
             std::cout << "******************************************************" << std::endl;
-            std::cout << "" << std::endl;
+            //     std::cout << "" << std::endl;
 
             std::cout << "TOTAL PACKETS --> " << total_packets << std::endl;
-            // std::cout << "RECEIVED :: bytes_received --> " << bytes_received << std::endl;
-            // std::cout << "RECEIVED :: packet_padding --> " << packet_padding << std::endl;
-            std::cout << "RECEIVED :: packet_ack_flg --> " << packet_ack_flg << std::endl;
-            // std::cout << "RECEIVED :: advertised_window --> " << advertised_window << std::endl;
-            std::cout << "RECEIVED :: packet_seq_no --> " << packet_seq_no << std::endl;
+            //     // std::cout << "RECEIVED :: bytes_received --> " << bytes_received << std::endl;
+            //     // std::cout << "RECEIVED :: packet_padding --> " << packet_padding << std::endl;
+            //     std::cout << "RECEIVED :: packet_ack_flg --> " << packet_ack_flg << std::endl;
+            //     // std::cout << "RECEIVED :: advertised_window --> " << advertised_window <<
+            //     std::endl; std::cout << "RECEIVED :: packet_seq_no --> " << packet_seq_no <<
+            //     std::endl;
             std::cout << "RECEIVED :: packet_ack_no --> " << packet_ack_no << std::endl;
 
             std::cout << std::endl;
             if (packet_ack_flg == 'x') {
                 // ALL PACKETS ACKNOWLEDGEMENT
-                std::cout << "ACK FOR LAST PACKET --> " << packet_ack_no << std::endl;
+                // std::cout << "ACK FOR LAST PACKET --> " << packet_ack_no << std::endl;
                 last_packet = total_packets;
                 base = packet_seq_no;
-                // nextseqnum = packet_ack_no;
-                std::cout << std::endl;
-                std::cout << "----------------------" << std::endl;
-                std::cout << "UPDATED :: base --> " << base << std::endl;
-                // std::cout << "UPDATED :: nextseqnum --> " << nextseqnum << std::endl;
-                std::cout << "----------------------" << std::endl;
-                std::cout << std::endl;
-                std::cout << "-------- ALL PACKETS ACKNOWLEDGED ------- " << std::endl;
-                std::cout << "JUMP TO :: OUTER" << std::endl;
-                std::cout << "******************************************************" << std::endl;
+                //      // nextseqnum = packet_ack_no;
+                //      std::cout << std::endl;
+                //      std::cout << "----------------------" << std::endl;
+                //      std::cout << "UPDATED :: base --> " << base << std::endl;
+                //      // std::cout << "UPDATED :: nextseqnum --> " << nextseqnum << std::endl;
+                //      std::cout << "----------------------" << std::endl;
+                //      std::cout << std::endl;
+                //      std::cout << "-------- ALL PACKETS ACKNOWLEDGED ------- " << std::endl;
+                //      std::cout << "JUMP TO :: OUTER" << std::endl;
+                //      std::cout << "******************************************************" <<
+                //      std::endl;
 
                 goto OUTER;
             }
+            // if (packet_ack_flg != '') {
+            if (packet_ack_no == base - 1) {
+                std::cout << std::endl;
+                std::cout << std::endl;
+                std::cout << std::endl;
+                std::cout << std::endl;
+                std::cout << "DUCPLICATE" << std::endl;
+                duplicate_ack++;
+                std::cout << std::endl;
+                std::cout << "packet_ack_no --> " << packet_ack_no << std::endl;
+                std::cout << "base --> " << base << std::endl;
+
+                std::cout << std::endl;
+                std::cout << std::endl;
+                std::cout << std::endl;
+                std::cout << std::endl;
+                std::cout << std::endl;
+
+                
+                std::cout << "DUP ACKS --> " << duplicate_ack << std::endl;
+                if(current_state == FAST_RECOVERY) {
+                    congestion_window += congestion_window; 
+                   packet_ack_no = base;
+                } 
+                if (duplicate_ack == 3) {
+                    base = packet_ack_no;
+                    from_timeout = 1;
+                    fastrecovery++;
+                    current_state = FAST_RECOVERY;
+                    std::cout << "SERVER ENTERING -- FAST_RECOVERY " << std::endl;
+                    // current_state = SLOW_START;
+                    ssthresh = congestion_window / 2;
+                    congestion_window = ssthresh + 3; // NOT SURE
+                    // TIMEOUT
+                    //
+                    // ALWAYS SEND PACKETS ON TIME OUT
+                    // std::cout << std::endl;
+                    // std::cout << "***** TIMER :: TIMEOUT *****" << std::endl;
+                    // std::cout << "JUMPING TO --> SEND_DATA_PACKET " << std::endl;
+                    // std::cout << std::endl;
+                    packet_ack_flg = 'p';
+                    time_calc_flg = 'n';
+                    // std::cout << "setting packet_ack_flg --> " << packet_ack_flg << std::endl;
+                    // std::cout << std::endl;
+                    // std::cout << "----------------FROM TIMEOUT----------------" << std::endl;
+                    
+                    goto SEND_DATA_PACKET;
+                }
+                // goto RECEIVE;
+            }
+
+            // }
+            if (packet_ack_no == 0 && packet_ack_flg != 's') {
+                from_timeout = 1;
+                base = 1;
+                packet_ack_flg = 'a';
+                // nextseqnum = base;
+                // packet_seq_no = base;
+                goto SEND_DATA_PACKET;
+            }
             if (packet_ack_no >= base) {
-                // if(base == 0 && packet_ack_no == 0) {
-                //     base = 1;
-                // }
-                //
-                base += packet_ack_no + 1 - base;
+                base = packet_ack_no + 1;
+                nextseqnum += base - packet_ack_no;
+                //  if (packet_ack_no == 0) {
+                //      nextseqnum += packet_ack_no + 1;
+                //  } else {
+                //      nextseqnum += packet_ack_no + 1 - base;
+                //  }
+
+                //   // if (congestion_window < advertised_window) {
+                //   std::cout << std::endl;
+                //   std::cout << "========================================" << std::endl;
+                //   std::cout << "INITIAL CONGESTION WINDOW --> " << congestion_window <<
+                //   std::endl; congestion_window += std::min(2 * advertised_window,
+                //   congestion_window); std::cout << "----------------------------------------" <<
+                //   std::endl; std::cout << "FINAL CONGESTION WINDOW --> " << congestion_window <<
+                //   std::endl; std::cout << "========================================" <<
+                //   std::endl; std::cout << std::endl;
+                //   //}
+                std::cout << "ssthresh --> " << ssthresh << std::endl;
+
+                if (current_state == SLOW_START) {
+                    duplicate_ack = 0;
+                    if (congestion_window >= ssthresh) {
+                        std::cout << "SERVER ENTERING -- CONGESTION AVOIDANCE." << std::endl;
+                        std::cout << std::endl;
+                        congestion++;
+                        current_state = CONGESTION_AVOID;
+                    } else {
+                        slowstart++;
+                        std::cout << std::endl;
+                        std::cout << "========================================" << std::endl;
+                        std::cout << "INITIAL CONGESTION WINDOW --> " << congestion_window
+                                  << std::endl;
+                        congestion_window += std::min(2 * advertised_window, congestion_window);
+                        std::cout << "----------------------------------------" << std::endl;
+                        std::cout << "FINAL CONGESTION WINDOW --> " << congestion_window
+                                  << std::endl;
+                        std::cout << "========================================" << std::endl;
+                        std::cout << std::endl;
+                    }
+                }
+
+                if (current_state == CONGESTION_AVOID) {
+                    duplicate_ack = 0;
+                    congestion_window += 1;
+                }
+                if (current_state == FAST_RECOVERY) {
+                    std::cout << "ENTERING CONGESTION AVOIDANCE " << std::endl;
+                    congestion++; 
+                    duplicate_ack = 0; 
+                    current_state = CONGESTION_AVOID;
+                    congestion_window = ssthresh;
+                }
                 // nextseqnum += packet_ack_no - nextseqnum;
                 // nextseqnum += base;
                 if (time_calc_flg == 'y') {
@@ -442,28 +601,38 @@ LISTEN_AGAIN:
                     long long elapsed_micro =
                         std::chrono::duration_cast<std::chrono::microseconds>(finish - start)
                             .count();
-                    std::cout << "elapsed_micro --> " << elapsed_micro << std::endl;
+                    // std::cout << "elapsed_micro --> " << elapsed_micro << std::endl;
                     if (estimatedRTT == 0) {
                         estimatedRTT = elapsed_micro;
                     }
                     calc_timeout(elapsed_micro, estimatedRTT, deviationRTT, timeout_value);
-                    std::cout << "NEW TIME --> " << timeout_value << std::endl;
+                    // std::cout << "NEW TIME --> " << timeout_value << std::endl;
                     time_calc_flg = 'n';
                 }
                 std::cout << std::endl;
                 std::cout << "----------------------" << std::endl;
                 std::cout << "UPDATED :: base --> " << base << std::endl;
-                // std::cout << "UPDATED :: nextseqnum --> " << nextseqnum << std::endl;
+                std::cout << "UPDATED :: nextseqnum --> " << nextseqnum << std::endl;
                 std::cout << "----------------------" << std::endl;
                 std::cout << std::endl;
+                from_timeout = 0;
+
+                std::cout << "----------------------FROM VALID ACK----------------------"
+                          << std::endl;
+                if (nextseqnum < total_packets) {
+                    goto SEND_DATA_PACKET;
+                } else {
+                    goto RECEIVE;
+                }
             } else {
                 std::cout << "ACK ALREADY RECEIVED :: packet_ack_no --> " << packet_ack_no
                           << std::endl;
 
                 std::cout << "" << std::endl;
+
+                goto RECEIVE;
             }
             std::cout << "******************************************************" << std::endl;
-            goto RECEIVE;
         }  // END_MAIN_WHILE
     }
 }
