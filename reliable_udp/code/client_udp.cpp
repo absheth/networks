@@ -83,7 +83,6 @@ int main(int argc, char const *argv[]) {
     std::string filename(argv[3]);
     int dropping_prob = atoi(argv[4]);
     useconds_t ip_sleep = atoi(argv[5]);
-    std::cout << "FILENAME --> " << filename << std::endl;
     working_directory = getenv("PWD");
     std::string removefile = working_directory+"/test.txt";
     std::remove(removefile.c_str());
