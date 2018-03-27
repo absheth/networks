@@ -415,6 +415,7 @@ LISTEN_AGAIN:
                 perror("~~~~~ TIMER :: ERROR IN SELECT ~~~~~");
                 exit(0);
             } else if (rval == 0) {
+                slowstart++;
                 std::cout << "SERVER ENTERING -- SLOW START" << std::endl;
                 current_state = SLOW_START;
                 ssthresh = congestion_window / 2;
