@@ -73,15 +73,17 @@ int main(int argc, char const *argv[]) {
     struct hostent *server;
     // -----------------------------------------------------------------------
     // std::cout << "argc --> " << argc << std::endl;
-    if (argc != 5) {
-        std::cout << "USAGE: ./client_udp hostname port dropping_prob sleep_in_microseconds" << std::endl;
+    if (argc != 6) {
+        std::cout << "USAGE: ./client_udp hostname port filename dropping_prob sleep_in_microseconds" << std::endl;
         exit(0);
     }
 
     std::string server_host = argv[1];
     int server_port = atoi(argv[2]);
-    int dropping_prob = atoi(argv[3]);
-    useconds_t ip_sleep = atoi(argv[4]);
+    std::string filename(argv[3]);
+    int dropping_prob = atoi(argv[4]);
+    useconds_t ip_sleep = atoi(argv[5]);
+    std::cout << "FILENAME --> " << filename << std::endl;
     working_directory = getenv("PWD");
     std::string removefile = working_directory+"/test.txt";
     std::remove(removefile.c_str());
@@ -165,7 +167,6 @@ int main(int argc, char const *argv[]) {
     // int random = 0;
     // -----------------------------
     // std::string filename = "server_r_udp.cpp";
-    std::string filename = "1mb.txt";
     // std::string filename = "1234.txt";
     // std::string filename = "2234.txt";
     memset(file_request, 0, sizeof(file_request));
@@ -398,7 +399,7 @@ int main(int argc, char const *argv[]) {
     // std::cout << "------------ RESPONSE END ------------" << '\n';
     auto finish = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = finish - start;
-    // std::cout << "Elapsed time: " << elapsed.count() << " s\n";
+    std::cout << "Elapsed time: " << elapsed.count() << " s\n";
     if (packet_ack_flg != 'n') {
         // FINAL_COMPUTATION
         total_received = ((client_waiting_on - 1) * DATA_SIZE) + last_pack_size;
