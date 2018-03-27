@@ -73,25 +73,31 @@ int clientlen;
 struct hostent *hostp;
 char *hostaddrp;
 int advertised_window;
+int ip_port;
 // -----------------------------------------------------------------------
 // MAIN_METHOD
 
 int main(int argc, char const *argv[]) {
     std::cout << "AKASH SHETH - SERVER" << std::endl;
     std::cout << "argc --> " << argc << '\n';
-    if(argc != 2) {
-        std::cout << "USAGE: ./server_udp advertised_window_in_bytes" << std::endl;
+    if(argc != 3) {
+        std::cout << "USAGE: ./server_udp port advertised_window_in_bytes" << std::endl;
         exit(0);
     }
-    int x = atoi(argv[1])/DATA_SIZE;
+    ip_port = atoi(argv[1]);
+    std::cout << "PORT --> " << ip_port << std::endl;
+    
+    int x = atoi(argv[2])/DATA_SIZE;
     if (x == 0) {
         advertised_window = 1;
     } else {
         advertised_window = x+1;
     }
-    // std::cout << "WINDOW --> " << advertised_window << std::endl;
+    
+    std::cout << "WINDOW --> " << advertised_window << std::endl;
     std::string working_directory = getenv("PWD");
     std::cout << "working_directory --> " << working_directory << '\n';
+    
     // window_size = 9;
     //--------------------------------------------
     if (start_server() != 0) {
@@ -663,7 +669,7 @@ int start_server() {
     bzero((char *)&server, sizeof(server));
     server.sin_family = AF_INET;
     server.sin_addr.s_addr = htonl(INADDR_ANY);
-    server.sin_port = htons(PORT);
+    server.sin_port = htons(ip_port);
     if (bind(listen_socket, (struct sockaddr *)&server, sizeof(server)) == -1) {
         close(listen_socket);  // close the listening socket because the binding failed.
         std::perror("server bind error");
